@@ -7,12 +7,28 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
+
+type SignupRequest struct {
+	NickName  string `json:"nickName"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Gender    string `json:"gender"`
+	Age       string `json:"age"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+}
+
+type Resp struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
 
 func main() {
 	var err error
@@ -24,7 +40,7 @@ func main() {
 
 	insertdb(db)
 
-	port := ":8080"
+	port := ":8088"
 	fs := http.FileServer(http.Dir("../frontend"))
 	http.Handle("/frontend/", http.StripPrefix("/frontend/", fs))
 
@@ -64,12 +80,26 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	ParseAndExecute(w)
+	if r.Method == http.MethodGet {
+		ParseAndExecute(w)
+	}
+	if r.Method == http.MethodPost {
+		var req SignupRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			fmt.Println(err)
+		}
+		insertUser(req)
+	}
 }
 
-type Resp struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+func insertUser(user SignupRequest) {
+	query := "INSERT INTO users (nickname, first_name, last_name, age, gender, Email, password) VALUES (?,?,?,?,?,?,?)"
+	_, err := db.Exec(query, user.NickName, user.FirstName, user.LastName, user.Age, user.Gender, user.Email, user.Password)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(10)
+	}
 }
 
 func signinPage(w http.ResponseWriter, r *http.Request) {
