@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,6 +31,43 @@ type Resp struct {
 	Code    int    `json:"code"`
 }
 
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	// CheckOrigin: func(r *http.Request) bool {
+	// 	return true
+	// },
+}
+
+func handleConnection(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.Header.Get("Connection"))
+	fmt.Println(r.Header.Get("Upgrade"))
+	fmt.Println(r.Header.Get("Sec-WebSocket-Key"))
+	fmt.Println(r.Header.Get("Sec-WebSocket-Version"))
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Connection", r.Header.Get("Connection"))
+		fmt.Println("Upgrade", r.Header.Get("Upgrade"))
+		fmt.Println("Sec-WebSocket-Key", r.Header.Get("Sec-WebSocket-Key"))
+		fmt.Println("Sec-WebSocket-Version", r.Header.Get("Sec-WebSocket-Version"))
+		fmt.Println("hello", err)
+		return
+	}
+	defer conn.Close()
+	for {
+		messageType, data, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println("Recieved message:", string(data))
+		if err := conn.WriteMessage(messageType, data); err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+}
+
 func main() {
 	var err error
 	db, err = sql.Open("sqlite3", "my_db.db")
@@ -48,6 +86,7 @@ func main() {
 	http.HandleFunc("/signin", signinPage)
 	http.HandleFunc("/sign-in", signin)
 	http.HandleFunc("/signup", signup)
+	http.HandleFunc("/ws", handleConnection)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
@@ -185,159 +224,3 @@ func insertdb(db *sql.DB) {
 		log.Println("Error creating tables:", err)
 	}
 }
-
-/* package main
-
-import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"html/template"
-	"log"
-	"net/http"
-
-	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
-)
-
-var db *sql.DB
-
-func main() {
-	db, _ := sql.Open("sqlite3", "my_db.db")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	insertdb(db)
-	port := ":8080"
-	fs := http.FileServer(http.Dir("../frontend"))
-	http.Handle("/frontend/", http.StripPrefix("/frontend/", fs))
-
-	http.HandleFunc("/", HomePage)
-	http.HandleFunc("/signin", signin)
-	http.HandleFunc("/signup", signup)
-
-	if err := http.ListenAndServe(port, nil); err != nil {
-		fmt.Println(err)
-	}
-}
-
-func HomePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.URL.Path)
-	if r.URL.Path != "/" {
-		w.Header().Set("content-type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(`{message: Page Not Found}`)
-		return
-	}
-
-	ParsAndExcut(w)
-}
-
-func ParsAndExcut(w http.ResponseWriter) {
-	tmp, err := template.ParseFiles("../index.html")
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	tmp.Execute(w, nil)
-}
-
-func signup(w http.ResponseWriter, r *http.Request) {
-	cookie := CheckCookie(r)
-	if cookie != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		fmt.Println("singup")
-		return
-	}
-	ParsAndExcut(w)
-}
-
-type Resp struct {
-	Message string `json:message`
-	Code    int    `json:code`
-}
-
-func signin(w http.ResponseWriter, r *http.Request) {
-	cookie := CheckCookie(r)
-	if cookie != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		fmt.Println("singin")
-		return
-	}
-
-	if r.Method == http.MethodPost {
-		fmt.Println(r.URL.Path)
-		email := r.FormValue("email")
-		password := r.FormValue("password")
-		resp := CheckCredentials(email, password)
-		if resp.Code == 0 {
-			fmt.Println(resp.Message)
-			return
-		}
-		w.Header().Set("content-type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	}
-
-	if r.Method == http.MethodGet {
-		ParsAndExcut(w)
-	}
-}
-
-func CheckCredentials(email, password string) Resp {
-	hashedpassword := ""
-	query := "SELECT passwor FROM users WHERE email = ?"
-	err := db.QueryRow(query, email).Scan(&hashedpassword)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return Resp{Message: "Email not found", Code: 0}
-		}
-		log.Println("Database error:", err)
-		return Resp{Message: "databese error", Code: 0}
-	}
-
-	if hashedpassword == "" {
-		return Resp{Message: "No password found for user", Code: 0}
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(hashedpassword), []byte(password))
-	if err != nil {
-		return Resp{Message: "Incorrect Password", Code: 0}
-	}
-	return Resp{Message: "Login successful", Code: 1}
-}
-
-func CheckCookie(r *http.Request) *http.Cookie {
-	cookie, err := r.Cookie("token")
-	if err != nil {
-		return nil
-	}
-	return cookie
-}
-
-func insertdb(db *sql.DB) {
-	query := `PRAGMA foreign_keys = on;
-	  CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		nickname VARCHAR(50),
-		first_name VARCHAR(50),
-		last_name VARCHAR(50),
-		age VARCHAR(50),
-		gender VARCHAR(20),
-		Email VARCHAR(100),
-		password VARCHAR(100)
-	  );
-	  CREATE TABLE IF NOT EXISTS sessions (
-		user_id INTEGER NOT NULL,
-	    token VARCHAR(255),
-		creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMPI,
-		PRIMARY KEY(user_id, token)
-	  );
-	`
-	_, err := db.Exec(query)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-*/
