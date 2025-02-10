@@ -1,3 +1,9 @@
+* {
+  padding: 0;
+  margin: 0;
+  background-color: rgb(165, 165, 165);
+}
+
 .formcontainer {
   border: black solid 1px;
   position: absolute;
@@ -7,6 +13,7 @@
   max-width: 600px;
   height: auto;
   width: 100%;
+  background-color: white;
 }
 
 .logform {
@@ -17,7 +24,3 @@
   height: auto;
   padding: 20px 0 40px 0;
 }
-
-/* .lbl {
-  color: white;
-} */

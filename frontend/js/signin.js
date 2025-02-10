@@ -7,7 +7,8 @@ export const signin = () => {
     key: "href",
     value: "/frontend/style/log.css",
   });
-  styleLink.href = "/frontend/style/log.css";
+  styleLink.rel = "stylesheet";
+
   let title = createHTMLel("title", "", "Sign In");
 
   document.head.append(styleLink, title);
@@ -48,11 +49,28 @@ export const signin = () => {
   passwordinpt.id = "passwordnpt";
   passwordinpt.type = "password";
 
-  let email = Emailinpt.value.trim();
-  let password = passwordinpt.value.trim();
-
   let submitbtn = createHTMLel("button", "submit", "submit");
-  addevents(form, "submit", "/sign-in", email, password);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    let email = Emailinpt.value.trim();
+    let password = passwordinpt.value.trim();
+    const data = {
+      email: email,
+      password: password,
+    };
+    e.preventDefault();
+    let res = await fetch("/sign-in", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }).then((res) => {
+      if (res.redirected) {
+        location.href = "/";
+      }
+    });
+  });
 
   form.append(h1, Emaillbl, Emailinpt, passwordlbl, passwordinpt, submitbtn);
   formcontainer.appendChild(form);
@@ -187,14 +205,12 @@ export const signup = () => {
   passwordinpt.id = "cpasswordnpt";
   passwordinpt.type = "password";
 
-  let email = Emailinpt.value.trim();
-  let password = passwordinpt.value.trim();
-  console.log(email, password);
-
   let submitbtn = createHTMLel("button", "submit", "submit");
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+    let email = Emailinpt.value.trim();
+    let password = passwordinpt.value.trim();
     let gender = maleipt.checked ? "male" : femaleipt.checked ? "female" : "";
     const data = {
       nickName: nicknameInpt.value,
@@ -212,6 +228,12 @@ export const signup = () => {
         "Content-type": "applicatio/json",
       },
       body: JSON.stringify(data),
+    }).then((resp) => {
+      console.log(resp);
+      if (resp.redirected) {
+        alert("hi");
+        location.href = "/signin";
+      }
     });
   });
   form.append(

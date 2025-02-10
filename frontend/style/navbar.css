@@ -1,0 +1,155 @@
+.header {
+  position: fixed;
+  top: 0;
+  z-index: 3;
+  height: 60px;
+  width: 100%;
+  background-color: var(--bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: black 1px solid;
+}
+
+.navbarUl .link,
+.logo {
+  text-decoration: none;
+  color: var(--text);
+  transition: color 200ms ease;
+}
+
+.navbarUl .link {
+  font-size: 1.2rem;
+  padding-right: 10px;
+}
+
+.logo {
+  padding-left: 20px;
+  font-size: 2rem;
+}
+
+.logo:hover,
+.navbarUl .link:hover {
+  color: var(--hover-color);
+}
+
+.searchbar {
+  width: 100%;
+  height: 80px;
+  /* padding: 0 20px; */
+  position: fixed;
+  top: 0;
+  border-top: 1px solid rgb(214, 214, 214);
+  display: flex;
+  align-items: center;
+  background-color: var(--bg);
+  box-shadow: var(--shadow);
+  transition: top 0.5s ease-in-out;
+  overflow: hidden;
+  gap: 10px;
+}
+
+.searchbar.expanded {
+  top: 60px;
+}
+
+.arrow {
+  cursor: pointer;
+  position: absolute;
+  bottom: 10px;
+  left: 98%;
+  height: 20px;
+  width: 20px;
+  font-size: 2rem;
+  display: inline-block;
+  transform-origin: center;
+  transition: transform 0.5s ease-in-out;
+}
+
+.rotated {
+  transform: rotate(180deg);
+}
+
+.category-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  width: 98%;
+  max-width: 93%;
+}
+
+.categories {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Hide scrollbar for Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar for IE */
+  white-space: nowrap;
+  padding: 10px 0;
+  width: 100%;
+}
+
+/* Hide scrollbar for Chrome, Safari */
+.categories::-webkit-scrollbar {
+  display: none;
+}
+
+.category {
+  background-color: #f5f5f5;
+  color: #333;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  white-space: nowrap;
+}
+
+.category:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.arrows {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  transition: 0.3s;
+}
+
+.arrows:hover,
+.arrow:hover {
+  color: #007bff;
+}
+
+.addPostContainer {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid black;
+  height: 300px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.show {
+  display: block;
+}
+
+.chosen {
+  background-color: #007bff;
+  color: white;
+}
+
+.errorp {
+  display: none;
+  color: red;
+  font-size: 1.25rem;
+}
