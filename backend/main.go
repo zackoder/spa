@@ -86,6 +86,7 @@ func main() {
 	http.HandleFunc("/signin", signinPage)
 	http.HandleFunc("/sign-in", signin)
 	http.HandleFunc("/signup", signup)
+	http.HandleFunc("/signout", signout)
 	http.HandleFunc("/addpost", addpost)
 	http.HandleFunc("/posts", getPosts)
 	http.HandleFunc("/category/{categoryName}", handlecategories)
@@ -95,6 +96,28 @@ func main() {
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func signout(w http.ResponseWriter, r *http.Request) {
+	cookie := CheckCookie(r)
+
+	if cookie == nil {
+
+		http.Redirect(w, r, "/signin", http.StatusUnauthorized)
+		return
+	}
+
+	if _, err := db.Exec("DELETE FROM sessions WHERE token = ?", cookie.Value); err != nil {
+		fmt.Println(err)
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Value:  "",
+		Name:   "forum_token",
+		MaxAge: -1,
+	})
+
+	http.Redirect(w, r, "/signin", http.StatusUnauthorized)
 }
 
 type Posts struct {
@@ -124,7 +147,9 @@ func getName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := "SELECT nickname FROM users WHERE id = (SELECT user_id FROM sessions WHERE token = ?)"
+
 	var nickname string
+	
 	if err := db.QueryRow(query, cookie.Value).Scan(&nickname); err != nil {
 		fmt.Println(err)
 		json.NewEncoder(w).Encode(map[string]string{"message": "unautorized"})
@@ -154,7 +179,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var posts []Posts
-	
+
 	query := `
 			SELECT 
 			p.id,
@@ -167,7 +192,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			ORDER BY p.id DESC 
 			LIMIT 20 OFFSET ?;
 	`
-	rows, err := db.Query(query, 0)
+	rows, err := db.Query(query, offset)
 
 	if err != nil {
 		fmt.Println("quering err:", err)
@@ -190,7 +215,7 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 }
 
 func profile(w http.ResponseWriter, r *http.Request) {
-	
+
 }
 
 func addpost(w http.ResponseWriter, r *http.Request) {
@@ -252,18 +277,21 @@ func insertPost(post Post, user_id int) string {
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
+	// db.Exec("DELETE * FROM sessions")
+	ParseAndExecute(w)
 	cookie := CheckCookie(r)
 	if cookie == nil {
-		http.Redirect(w, r, "/signin", http.StatusUnauthorized)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"message": "Unauthorized"})
 		return
 	}
+
 	if r.URL.Path != "/" {
 		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"message": "Page Not Found"})
 		return
 	}
-	ParseAndExecute(w)
 }
 
 func ParseAndExecute(w http.ResponseWriter) {
@@ -316,10 +344,7 @@ func signinPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-
-	if r.Method == http.MethodGet {
-		ParseAndExecute(w)
-	}
+	ParseAndExecute(w)
 }
 
 type signinRequest struct {
@@ -333,6 +358,7 @@ func signin(w http.ResponseWriter, r *http.Request) {
 
 	var siginData signinRequest
 	json.NewDecoder(r.Body).Decode(&siginData)
+	fmt.Println(siginData)
 	message := CheckCredentials(siginData.Userinpt, siginData.Password)
 	if message != "" {
 		w.WriteHeader(http.StatusNotFound)
@@ -348,10 +374,12 @@ func signin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := "INSERT INTO sessions (user_id, token) VALUES (?, ?)"
+
 	_, err := db.Exec(query, 1, "test")
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	http.SetCookie(w, &cookie)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
@@ -384,6 +412,7 @@ func CheckCredentials(email, password string) string {
 func CheckCookie(r *http.Request) *http.Cookie {
 	cookie, err := r.Cookie("forum_token")
 	if err != nil {
+		fmt.Println(err)
 		return nil
 	}
 	return cookie
@@ -417,8 +446,48 @@ func insertdb(db *sql.DB) {
 		content TEXT NOT NULL,
 		user_id INTEGER NOT NULL,
 		createdAt INTEGER,
-		FOREIGN KEY (user_id) REFERENCES users(id)
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	  );
+
+	  CREATE TABLE IF NOT EXISTS categories (
+		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		name varchar(255) NOT NULL UNIQUE
+	  );
+
+	  CREATE TABLE IF NOT EXISTS comments (
+		id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,
+		post_id INTEGER NOT NULL,
+		comment TEXT NOT NULL,
+		date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+		FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+	  );
+
+	  CREATE TABLE IF NOT EXISTS reactions (
+   		id INTEGER PRIMARY KEY AUTOINCREMENT,
+  		user_id INTEGER NOT NULL,
+   		post_id INTEGER,
+   		comment_id INTEGER,
+    	reaction_type TEXT NOT NULL, -- e.g., 'like', 'love', 'angry', etc.
+    	date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    	FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    	FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE,
+    	CHECK (
+        	(post_id IS NOT NULL AND comment_id IS NULL) OR
+        	(comment_id IS NOT NULL AND post_id IS NULL)
+    	)
+	  );
+
+	  CREATE TABLE IF NOT EXISTS posts_categories (
+		post_id INTEGER NOT NULL,
+		category_id INTEGER NOT NULL,
+		PRIMARY KEY (post_id,category_id),
+		FOREIGN KEY (post_id) REFERENCES posts(id),
+		FOREIGN KEY (category_id) REFERENCES categories(id)
+	  );
+
 	`
 	_, err := db.Exec(query)
 	if err != nil {

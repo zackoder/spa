@@ -1,3 +1,30 @@
+.main {
+  width: 100%;
+  max-width: 1550px;
+  margin: auto;
+  padding-top: 160px;
+  display: grid;
+  grid-template-columns: minmax(150px, 300px) minmax(300px, 800px) minmax(
+      150px,
+      300px
+    );
+  gap: 20px;
+}
+
 .postContainer {
-    
+  margin-bottom: 20px;
+  border: 1px solid black;
+  display: flex;
+  flex-direction: column;
+}
+
+.postContainer .creationDate {
+  align-self: flex-end;
+  padding-right: 20px;
+  margin-bottom: 8px;
+}
+
+.Posttitle,
+.Postcontent {
+  word-break: break-word;
 }

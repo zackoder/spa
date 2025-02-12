@@ -1,8 +1,10 @@
-import { addevents, createHTMLel } from "./helpers.js";
+import { createHTMLel, fetchData } from "./helpers.js";
 
 const root = document.querySelector(".root");
 
 export const signin = () => {
+  console.log("hello");
+
   let styleLink = createHTMLel("link", "", "", {
     key: "href",
     value: "/frontend/style/log.css",
@@ -58,18 +60,8 @@ export const signin = () => {
       email: email,
       password: password,
     };
-    e.preventDefault();
-    let res = await fetch("/sign-in", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }).then((res) => {
-      if (res.redirected) {
-        location.href = "/";
-      }
-    });
+
+    let res = fetchData("/sign-in", data);
   });
 
   form.append(h1, Emaillbl, Emailinpt, passwordlbl, passwordinpt, submitbtn);
@@ -209,6 +201,7 @@ export const signup = () => {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
+
     let email = Emailinpt.value.trim();
     let password = passwordinpt.value.trim();
     let gender = maleipt.checked ? "male" : femaleipt.checked ? "female" : "";
@@ -222,20 +215,16 @@ export const signup = () => {
       password: password,
     };
 
-    let res = fetch("/signup", {
-      method: "POST",
-      headers: {
-        "Content-type": "applicatio/json",
-      },
-      body: JSON.stringify(data),
-    }).then((resp) => {
+    let res = fetchData("/signup", data);
+    res.then((resp) => {
       console.log(resp);
-      if (resp.redirected) {
-        alert("hi");
-        location.href = "/signin";
-      }
+
+      // if (resp.redirected) {
+      //   location.href = "/signin";
+      // }
     });
   });
+
   form.append(
     h1,
     nicknameLbl,
@@ -260,4 +249,13 @@ export const signup = () => {
   );
   formcontainer.appendChild(form);
   root.appendChild(formcontainer);
+};
+
+export const signout = async () => {
+  let res = await fetch("/signout");
+  console.log(res);
+
+  if (res.redirected) {
+    location.href = "/signin";
+  }
 };

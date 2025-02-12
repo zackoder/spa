@@ -1,6 +1,6 @@
 import { creatcategories, createHTMLel, sendPost } from "./helpers.js";
 
-export const root = document.querySelector(".root");
+export const root = document.getElementById("root");
 
 export const navbar = async (nickname) => {
   const style = createHTMLel("link", "", "", {
@@ -12,7 +12,6 @@ export const navbar = async (nickname) => {
 
   const header = createHTMLel("header", "header");
   const logo = createHTMLel("a", "logo", "forum", { key: "href", value: "/" });
-
 
   const profile = createHTMLel("a", "link", "Profile", {
     key: "href",

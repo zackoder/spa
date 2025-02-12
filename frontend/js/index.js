@@ -1,7 +1,12 @@
-import { signin, signup } from "./signin.js";
+import { signin, signout, signup } from "./signin.js";
 import { chatbox } from "./chatFunctionality.js";
 import { navbar, searchBar } from "./navbar.js";
-import { addPostPopUp, showPosts } from "./helpers.js";
+import {
+  addPostPopUp,
+  createHTMLel,
+  handlescroll,
+  showPosts,
+} from "./helpers.js";
 import { root } from "./navbar.js";
 document.addEventListener("DOMContentLoaded", async () => {
   setupSPA();
@@ -10,15 +15,37 @@ document.addEventListener("DOMContentLoaded", async () => {
 const routes = {
   "/signin": signin,
   "/signup": signup,
+  "/signout": signout,
   "/": async () => {
     try {
       let res = await fetch("/getNickName");
+      if (!res.ok) {
+        alert("res in not ok");
+        location.href = "signin";
+      }
+
       let data = await res.json();
+
       let nickname = data.nickname;
       navbar(nickname);
       searchBar();
+      const style = createHTMLel("link", "", "", {
+        key: "href",
+        value: "/frontend/style/post.css",
+      });
+      style.rel = "stylesheet";
+      const title = createHTMLel("title", "", "Forum");
+      document.head.append(style, title);
       addPostPopUp();
       showPosts("/posts");
+      let scroll = window.scrollY;
+      document.addEventListener("scrollend", () => {
+        console.log(window.innerHeight + window.scrollY);
+        console.log(root.offsetHeight);
+        if (window.innerHeight + window.scrollY >= root.offsetHeight - 200) {
+          handlescroll(scroll);
+        }
+      });
     } catch (err) {
       console.log(err);
       location.href = "/signin";
