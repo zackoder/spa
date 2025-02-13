@@ -3,12 +3,12 @@ import { createHTMLel, fetchData } from "./helpers.js";
 const root = document.querySelector(".root");
 
 export const signin = () => {
-  console.log("hello");
 
   let styleLink = createHTMLel("link", "", "", {
     key: "href",
     value: "/frontend/style/log.css",
   });
+  
   styleLink.rel = "stylesheet";
 
   let title = createHTMLel("title", "", "Sign In");
@@ -62,6 +62,9 @@ export const signin = () => {
     };
 
     let res = fetchData("/sign-in", data);
+    res.then((res) => {
+      if (res.ok) location.href = "/";
+    });
   });
 
   form.append(h1, Emaillbl, Emailinpt, passwordlbl, passwordinpt, submitbtn);
@@ -218,10 +221,9 @@ export const signup = () => {
     let res = fetchData("/signup", data);
     res.then((resp) => {
       console.log(resp);
-
-      // if (resp.redirected) {
-      //   location.href = "/signin";
-      // }
+      if (resp.redirected) {
+        location.href = "/";
+      }
     });
   });
 
@@ -255,7 +257,7 @@ export const signout = async () => {
   let res = await fetch("/signout");
   console.log(res);
 
-  if (res.redirected) {
+  if (res.ok) {
     location.href = "/signin";
   }
 };

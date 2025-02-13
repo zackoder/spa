@@ -91,6 +91,7 @@ func main() {
 	http.HandleFunc("/posts", getPosts)
 	http.HandleFunc("/category/{categoryName}", handlecategories)
 	http.HandleFunc("/{nickname}", profile)
+	http.HandleFunc("/get_categories", servercategories)
 	http.HandleFunc("/ws", handleConnection)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
@@ -98,11 +99,34 @@ func main() {
 	}
 }
 
+type Category struct {
+	Name string `json:"name"`
+}
+
+func servercategories(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	query := "SELECT name FROM categories"
+	rows, err := db.Query(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var categories []Category
+	for rows.Next() {
+		var category Category
+		if err := rows.Scan(&category.Name); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		categories = append(categories, category)
+	}
+	json.NewEncoder(w).Encode(categories)
+}
+
 func signout(w http.ResponseWriter, r *http.Request) {
 	cookie := CheckCookie(r)
 
 	if cookie == nil {
-
 		http.Redirect(w, r, "/signin", http.StatusUnauthorized)
 		return
 	}
@@ -117,7 +141,7 @@ func signout(w http.ResponseWriter, r *http.Request) {
 		MaxAge: -1,
 	})
 
-	http.Redirect(w, r, "/signin", http.StatusUnauthorized)
+	http.Redirect(w, r, "/signin", http.StatusOK)
 }
 
 type Posts struct {
@@ -149,7 +173,7 @@ func getName(w http.ResponseWriter, r *http.Request) {
 	query := "SELECT nickname FROM users WHERE id = (SELECT user_id FROM sessions WHERE token = ?)"
 
 	var nickname string
-	
+
 	if err := db.QueryRow(query, cookie.Value).Scan(&nickname); err != nil {
 		fmt.Println(err)
 		json.NewEncoder(w).Encode(map[string]string{"message": "unautorized"})
@@ -219,6 +243,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 }
 
 func addpost(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -279,15 +304,7 @@ func insertPost(post Post, user_id int) string {
 func HomePage(w http.ResponseWriter, r *http.Request) {
 	// db.Exec("DELETE * FROM sessions")
 	ParseAndExecute(w)
-	cookie := CheckCookie(r)
-	if cookie == nil {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"message": "Unauthorized"})
-		return
-	}
-
 	if r.URL.Path != "/" {
-		w.WriteHeader(http.StatusNotFound)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"message": "Page Not Found"})
 		return
@@ -493,4 +510,37 @@ func insertdb(db *sql.DB) {
 	if err != nil {
 		log.Println("Error creating tables:", err)
 	}
+	db.Exec(`INSERT INTO categories (name) VALUES
+('Technology'),
+('Science'),
+('Health & Wellness'),
+('Business & Finance'),
+('Education'),
+('Entertainment'),
+('Sports'),
+('Politics'),
+('Travel'),
+('Lifestyle'),
+('Artificial Intelligence'),
+('Cybersecurity'),
+('Software Development'),
+('Blockchain & Cryptocurrency'),
+('Gadgets & Reviews'),
+('Web Development'),
+('Cloud Computing'),
+('Gaming'),
+('Nutrition'),
+('Mental Health'),
+('Exercise & Fitness'),
+('Meditation & Mindfulness'),
+('Medical News'),
+('Movies & TV Shows'),
+('Music'),
+('Literature & Books'),
+('Photography'),
+('Fashion'),
+('Food & Cooking'),
+('History'),
+('DIY & Crafts');
+`)
 }

@@ -64,7 +64,7 @@ export const sendPost = async (title, content, categories, errp) => {
   });
 };
 
-export const addPostPopUp = () => {
+export const addPostPopUp = async () => {
   const div = createHTMLel("div", "addPostContainer");
   const h1 = createHTMLel("h1", "addPostHead", "Creat Post");
   const titleLbl = createHTMLel("label", "lbl", "Title", {
@@ -84,11 +84,12 @@ export const addPostPopUp = () => {
     value: "enter the content",
   });
   const categories = createHTMLel("div", "categories");
-  creatcategories(categories, "div");
+  await creatcategories(categories, "div");
 
-  let chosenCategoreis = Array.from(
-    categories.querySelectorAll(".categories .category")
-  );
+  let chosenCategoreis = Array.from(categories.querySelectorAll(".category"));
+
+  console.log(chosenCategoreis);
+
   chosenCategoreis.forEach((btn) => {
     btn.addEventListener("click", () => {
       btn.classList.toggle("chosen");
@@ -100,7 +101,6 @@ export const addPostPopUp = () => {
 
   submitbtn.addEventListener("click", () => {
     let chosenCate = [];
-
     chosenCategoreis.forEach((category) => {
       if (category.classList.contains("chosen")) {
         chosenCate.push(category.textContent);
@@ -108,6 +108,7 @@ export const addPostPopUp = () => {
     });
     sendPost(titleinpt.value, contnetinpt.value, chosenCate, errp);
   });
+
   div.append(
     h1,
     titleLbl,
@@ -121,7 +122,7 @@ export const addPostPopUp = () => {
   root.appendChild(div);
 };
 
-export const creatcategories = (categoriesSlider, type) => {
+export const creatcategories = async (categoriesSlider, type) => {
   const left_arrow = createHTMLel("button", "arrows");
   left_arrow.innerHTML = "&lt;";
   const rgth_arrow = createHTMLel("button", "arrows");
@@ -134,13 +135,21 @@ export const creatcategories = (categoriesSlider, type) => {
     categories.scrollBy({ left: 150, behavior: "smooth" });
   });
   const categories = createHTMLel("div", "categories");
-  for (let i = 0; i < 50; i++) {
-    const opstion = createHTMLel(type, "category", "test", {
-      key: "href",
-      value: `/category/test`,
-    });
+  let res = await fetch("/get_categories");
+  let data = await res.json();
+  console.log("data: ", data);
+  data.forEach((category) => {
+    let opstion;
+    if (type !== "a") {
+      opstion = createHTMLel(type, "category", category.name);
+    } else {
+      opstion = createHTMLel(type, "category", category.name, {
+        key: "href",
+        value: `/category/${category.name}`,
+      });
+    }
     categories.append(opstion);
-  }
+  });
   categoriesSlider.append(left_arrow, categories, rgth_arrow);
 };
 
