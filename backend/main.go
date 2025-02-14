@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -89,8 +90,8 @@ func main() {
 	http.HandleFunc("/signout", signout)
 	http.HandleFunc("/addpost", addpost)
 	http.HandleFunc("/posts", getPosts)
-	http.HandleFunc("/category/{categoryName}", handlecategories)
-	http.HandleFunc("/{nickname}", profile)
+	http.HandleFunc("/api/category/{categoryName}", handlecategories)
+	http.HandleFunc("/api/{nickname}", profile)
 	http.HandleFunc("/get_categories", servercategories)
 	http.HandleFunc("/ws", handleConnection)
 
@@ -111,7 +112,9 @@ func servercategories(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	var categories []Category
+
 	for rows.Next() {
 		var category Category
 		if err := rows.Scan(&category.Name); err != nil {
@@ -120,6 +123,7 @@ func servercategories(w http.ResponseWriter, r *http.Request) {
 		}
 		categories = append(categories, category)
 	}
+	defer rows.Close()
 	json.NewEncoder(w).Encode(categories)
 }
 
@@ -127,7 +131,8 @@ func signout(w http.ResponseWriter, r *http.Request) {
 	cookie := CheckCookie(r)
 
 	if cookie == nil {
-		http.Redirect(w, r, "/signin", http.StatusUnauthorized)
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		// http.Redirect(w, r, "/signin", http.StatusUnauthorized)
 		return
 	}
 
@@ -231,11 +236,77 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 		}
 		posts = append(posts, post)
 	}
+
+	defer rows.Close()
 	json.NewEncoder(w).Encode(posts)
 }
 
 func handlecategories(w http.ResponseWriter, r *http.Request) {
+	if CheckCookie(r) == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
+	var categoryId int
+	category, err := url.QueryUnescape(r.PathValue("categoryName"))
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	offset := r.URL.Query().Get("offset")
+	getCategoryIdQuery := "SELECT id FROM categories WHERE name = ?"
+	if err := db.QueryRow(getCategoryIdQuery, category).Scan(&categoryId); err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("there is no category named " + category)
+			http.Error(w, "there is no category named "+category, http.StatusNotFound)
+			return
+		} else {
+			fmt.Println(err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	getPostsQuery := `
+		SELECT 
+			p.id, 
+			p.title, 
+			p.content,
+			u.nickname,
+			p.createdAt
+		FROM posts p
+		JOIN users u ON u.id = p.user_id
+		JOIN posts_categories pc ON p.id = pc.post_id
+		WHERE pc.category_id = ?
+		ORDER BY p.id DESC
+		LIMIT 20 OFFSET ?;
+	`
+
+	rows, err := db.Query(getPostsQuery, categoryId, offset)
+	if err != nil {
+		fmt.Println("Database error:", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var posts []Posts
+
+	for rows.Next() {
+		var post Posts
+		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt); err != nil {
+			fmt.Println("Row scan error:", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		posts = append(posts, post)
+	}
+
+	defer rows.Close()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
 }
 
 func profile(w http.ResponseWriter, r *http.Request) {
@@ -267,48 +338,70 @@ func addpost(w http.ResponseWriter, r *http.Request) {
 
 	var NewPost Post
 	json.NewDecoder(r.Body).Decode(&NewPost)
-	if message := insertPost(NewPost, user_id); message != "" {
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": message})
-	}
 
-	fmt.Println(NewPost)
+	message, postId := insertPost(NewPost, user_id)
+	if message != "" {
+		fmt.Println(message)
+		http.Error(w, message, http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]int{"postId": postId})
 }
 
-func insertPost(post Post, user_id int) string {
+func insertPost(post Post, user_id int) (string, int) {
 	if post.Title == "" {
 		fmt.Println("title")
-		return "Titel can not be empty"
+		return "Titel can not be empty", 0
 	}
 
 	if post.Content == "" {
 		fmt.Println("content")
-		return "Content can not be empty"
+		return "Content can not be empty", 0
 	}
 
 	if len(post.Categories) == 0 {
 		fmt.Println("categories")
-		return "You need to choose at least one category"
+		return "You need to choose at least one category", 0
 	}
 
 	query := "INSERT INTO posts (title, content, user_id, createdAt) VALUES (?,?, ?, strftime('%s', 'now'))"
 
-	_, err := db.Exec(query, post.Title, post.Content, user_id)
+	res, err := db.Exec(query, post.Title, post.Content, user_id)
+
 	if err != nil {
 		fmt.Println("inserting err:", err)
-		return "Try to post another time"
+		return "Try to post another time", 0
 	}
-	return ""
+
+	lastId, _ := res.LastInsertId()
+
+	for _, category := range post.Categories {
+		getcategoryId := "SELECT id FROM categories WHERE name = ?"
+		var categoryId int
+		if err := db.QueryRow(getcategoryId, category).Scan(&categoryId); err != nil {
+			if err == sql.ErrNoRows {
+				return "there is no catergory named " + category, 0
+			} else {
+				fmt.Println("selecting and enserting categories", err.Error())
+				return "Inertnal server err", 0
+			}
+		}
+
+		insertPostCategory := "INSERT INTO posts_categories (post_id, category_id) VALUES (? , ?)"
+		db.Exec(insertPostCategory, lastId, categoryId)
+	}
+
+	return "", int(lastId)
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
 	// db.Exec("DELETE * FROM sessions")
 	ParseAndExecute(w)
-	if r.URL.Path != "/" {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"message": "Page Not Found"})
-		return
-	}
+	// if r.URL.Path != "/" {
+	// 	w.Header().Set("Content-Type", "application/json")
+	// 	json.NewEncoder(w).Encode(map[string]string{"message": "Page Not Found"})
+	// 	return
+	// }
 }
 
 func ParseAndExecute(w http.ResponseWriter) {

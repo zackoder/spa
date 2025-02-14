@@ -2,7 +2,10 @@ import { creatcategories, createHTMLel, sendPost } from "./helpers.js";
 
 export const root = document.getElementById("root");
 
-export const navbar = async (nickname) => {
+export const navbar = async () => {
+  let res = await fetch("/getNickName");
+  if (!res.ok) location.href = "/signin";
+  let data = await res.json();
   const style = createHTMLel("link", "", "", {
     key: "href",
     value: "/frontend/style/navbar.css",
@@ -15,7 +18,7 @@ export const navbar = async (nickname) => {
 
   const profile = createHTMLel("a", "link", "Profile", {
     key: "href",
-    value: `/${nickname}`,
+    value: `/${data.nickname}`,
   });
 
   const logout = createHTMLel("a", "link", "Sing Out", {

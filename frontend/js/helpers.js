@@ -1,3 +1,4 @@
+import { getOffset, offset, setOffset } from "./index.js";
 import { root } from "./navbar.js";
 
 export const createHTMLel = (
@@ -30,6 +31,12 @@ export const fetchData = async (path, data) => {
     body: JSON.stringify(data),
   });
   return resp;
+};
+
+export const fetchcategory = async (path) => {
+  let res = await fetch("/api" + path);
+  let data = await res.json();
+  showPosts("/api/" + path);
 };
 
 export const sendPost = async (title, content, categories, errp) => {
@@ -88,8 +95,6 @@ export const addPostPopUp = async () => {
 
   let chosenCategoreis = Array.from(categories.querySelectorAll(".category"));
 
-  console.log(chosenCategoreis);
-
   chosenCategoreis.forEach((btn) => {
     btn.addEventListener("click", () => {
       btn.classList.toggle("chosen");
@@ -137,7 +142,6 @@ export const creatcategories = async (categoriesSlider, type) => {
   const categories = createHTMLel("div", "categories");
   let res = await fetch("/get_categories");
   let data = await res.json();
-  console.log("data: ", data);
   data.forEach((category) => {
     let opstion;
     if (type !== "a") {
@@ -153,12 +157,13 @@ export const creatcategories = async (categoriesSlider, type) => {
   categoriesSlider.append(left_arrow, categories, rgth_arrow);
 };
 
-let offset = 0;
-
 export const showPosts = async (path) => {
   let loading = false;
+  if (path.startsWith("/category/")) path = "/api" + path;
+  if (path == "/") path = "/posts";
   try {
     if (loading) return;
+    let offset = getOffset();
     loading = true;
     let res = await fetch(`${path}?offset=${offset}`);
 
@@ -172,8 +177,7 @@ export const showPosts = async (path) => {
     }
 
     creatPosts(postsContainer, data);
-    console.log("hello");
-    offset += 20;
+    setOffset(offset + 20);
   } catch {
   } finally {
     loading = false;
@@ -213,7 +217,6 @@ const creatPosts = (container, data) => {
 function handleReaction(container, target, post) {
   const likebtn = createHTMLel("button", "like" + target, "like");
   const likespan = createHTMLel("span", "likesSpan", post.reactions.likes);
-  console.log(post.reactions.likes);
 
   const dislikebtn = createHTMLel("button", "dislike" + target, "dislike");
   const dislikespan = createHTMLel(
@@ -250,9 +253,12 @@ function formatDate(time) {
 
 export const handlescroll = (scroll) => {
   let currentscroll = window.scrollY;
+  console.log(currentscroll, scroll);
 
   if (scroll < currentscroll) {
-    showPosts("/posts");
+    console.log("hi from the condition");
+
+    showPosts(location.pathname);
     currentscroll = scroll;
   }
 };

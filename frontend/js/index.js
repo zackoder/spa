@@ -4,6 +4,7 @@ import { navbar, searchBar } from "./navbar.js";
 import {
   addPostPopUp,
   createHTMLel,
+  fetchcategory,
   handlescroll,
   showPosts,
 } from "./helpers.js";
@@ -20,49 +21,51 @@ const routes = {
   "/404": notFound,
   "/": async () => {
     try {
-      let res = await fetch("/getNickName");
-
-      if (!res.ok) {
-        location.href = "/signin";
-      } else {
-        let data = await res.json();
-
-        let nickname = data.nickname;
-        navbar(nickname);
-        searchBar();
-        const style = createHTMLel("link", "", "", {
-          key: "href",
-          value: "/frontend/style/post.css",
-        });
-
-        style.rel = "stylesheet";
-        const title = createHTMLel("title", "", "Forum");
-        document.head.append(style, title);
-        addPostPopUp();
-        showPosts("/posts");
-
-        let scroll = window.scrollY;
-        document.addEventListener("scrollend", () => {
-          console.log(window.innerHeight + window.scrollY);
-          console.log(root.offsetHeight);
-          if (window.innerHeight + window.scrollY >= root.offsetHeight - 200) {
-            handlescroll(scroll);
-          }
-        });
-      }
+      setupPage();
+      showPosts(location.pathname);
     } catch (err) {
       console.log(err);
       location.href = "/signin";
     }
-    document.querySelector("#startChat")?.addEventListener("click", chatbox);
+    // document.querySelector("#startChat")?.addEventListener("click", chatbox);
   },
 };
+
+let scroll = window.scrollY;
+
+document.addEventListener("scrollend", () => {
+  console.log(window.innerHeight + window.scrollY);
+  if (window.innerHeight + window.scrollY >= root.offsetHeight - 200) {
+    console.log("hi");
+    handlescroll(scroll);
+  }
+});
+
+async function setupPage() {
+  if (!document.querySelector(".header")) {
+    await navbar();
+    searchBar();
+    const style = createHTMLel("link", "", "", {
+      key: "href",
+      value: "/frontend/style/post.css",
+    });
+
+    style.rel = "stylesheet";
+    const title = createHTMLel("title", "", "Forum");
+    document.head.append(style, title);
+    addPostPopUp();
+  }
+  // showPosts(location.pathname);
+}
+export let offset = 0;
 
 function setupSPA() {
   root.addEventListener("click", (e) => {
     const link = e.target.closest("a");
     if (link && link.origin === location.origin) {
       e.preventDefault();
+      offset = 0;
+      document.querySelector(".postscontainer").innerHTML = "";
       navigateTo(link.pathname);
     }
   });
@@ -70,6 +73,14 @@ function setupSPA() {
   window.addEventListener("popstate", () => handleRoute(location.pathname));
 
   handleRoute(location.pathname);
+}
+
+export function getOffset() {
+  return offset;
+}
+
+export function setOffset(value) {
+  offset = value;
 }
 
 function navigateTo(path) {
@@ -83,9 +94,10 @@ async function handleRoute(path) {
     await routes[path]();
   } else if (isUsernamePath(path)) {
     await fetchUserProfile(path.substring(1));
-  } else if (path.includes("/category/")) {
-    console.log(path);
+    setupPage();
+  } else if (path.startsWith("/category/")) {
     await fetchcategory(path);
+    setupPage();
   } else {
     navigateTo("/404");
   }

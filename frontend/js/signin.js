@@ -3,12 +3,11 @@ import { createHTMLel, fetchData } from "./helpers.js";
 const root = document.querySelector(".root");
 
 export const signin = () => {
-
   let styleLink = createHTMLel("link", "", "", {
     key: "href",
     value: "/frontend/style/log.css",
   });
-  
+
   styleLink.rel = "stylesheet";
 
   let title = createHTMLel("title", "", "Sign In");
@@ -254,10 +253,14 @@ export const signup = () => {
 };
 
 export const signout = async () => {
-  let res = await fetch("/signout");
-  console.log(res);
+  try {
+    let res = await fetch("/signout");
+    console.log(res);
 
-  if (res.ok) {
-    location.href = "/signin";
+    if (res.ok) {
+      location.href = "/signin";
+    }
+  } catch (err) {
+    alert("an error acursed while signing out");
   }
 };
