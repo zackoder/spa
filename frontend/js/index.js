@@ -1,15 +1,9 @@
 import { signin, signout, signup } from "./signin.js";
-import { chatbox } from "./chatFunctionality.js";
-import { navbar, searchBar } from "./navbar.js";
-import {
-  addPostPopUp,
-  createHTMLel,
-  fetchcategory,
-  handlescroll,
-  showPosts,
-} from "./helpers.js";
+import { fetchcategory, setupPage, showPosts, trackscroll } from "./helpers.js";
+
 import { root } from "./navbar.js";
 import { notFound } from "./errpage.js";
+
 document.addEventListener("DOMContentLoaded", async () => {
   setupSPA();
 });
@@ -27,37 +21,12 @@ const routes = {
       console.log(err);
       location.href = "/signin";
     }
-    // document.querySelector("#startChat")?.addEventListener("click", chatbox);
   },
 };
 
-let scroll = window.scrollY;
+trackscroll();
 
-document.addEventListener("scrollend", () => {
-  console.log(window.innerHeight + window.scrollY);
-  if (window.innerHeight + window.scrollY >= root.offsetHeight - 200) {
-    console.log("hi");
-    handlescroll(scroll);
-  }
-});
-
-async function setupPage() {
-  if (!document.querySelector(".header")) {
-    await navbar();
-    searchBar();
-    const style = createHTMLel("link", "", "", {
-      key: "href",
-      value: "/frontend/style/post.css",
-    });
-
-    style.rel = "stylesheet";
-    const title = createHTMLel("title", "", "Forum");
-    document.head.append(style, title);
-    addPostPopUp();
-  }
-  // showPosts(location.pathname);
-}
-export let offset = 0;
+let offset = 0;
 
 function setupSPA() {
   root.addEventListener("click", (e) => {

@@ -28,3 +28,11 @@
 .Postcontent {
   word-break: break-word;
 }
+
+.liked {
+  background-color: rgb(155, 155, 250);
+}
+
+.disliked {
+  background-color: rgb(255, 159, 159);
+}

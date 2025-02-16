@@ -1,34 +1,41 @@
-import { creatcategories, createHTMLel, sendPost } from "./helpers.js";
+import { creatcategories, createHTMLel } from "./helpers.js";
 
 export const root = document.getElementById("root");
 
 export const navbar = async () => {
   let res = await fetch("/getNickName");
-  if (!res.ok) location.href = "/signin";
-  let data = await res.json();
-  const style = createHTMLel("link", "", "", {
-    key: "href",
-    value: "/frontend/style/navbar.css",
-  });
-  style.rel = "stylesheet";
-  document.head.appendChild(style);
+  if (!res.ok) {
+    location.href = "/signin";
+    return;
+  } else {
+    let data = await res.json();
+    const style = createHTMLel("link", "", "", {
+      key: "href",
+      value: "/frontend/style/navbar.css",
+    });
+    style.rel = "stylesheet";
+    document.head.appendChild(style);
 
-  const header = createHTMLel("header", "header");
-  const logo = createHTMLel("a", "logo", "forum", { key: "href", value: "/" });
+    const header = createHTMLel("header", "header");
+    const logo = createHTMLel("a", "logo", "forum", {
+      key: "href",
+      value: "/",
+    });
 
-  const profile = createHTMLel("a", "link", "Profile", {
-    key: "href",
-    value: `/${data.nickname}`,
-  });
+    const profile = createHTMLel("a", "link", "Profile", {
+      key: "href",
+      value: `/${data.nickname}`,
+    });
 
-  const logout = createHTMLel("a", "link", "Sing Out", {
-    key: "href",
-    value: "/signout",
-  });
-  const ul = createHTMLel("ul", "navbarUl");
-  ul.append(profile, logout);
-  header.append(logo, ul);
-  root.appendChild(header);
+    const logout = createHTMLel("a", "link", "Sing Out", {
+      key: "href",
+      value: "/signout",
+    });
+    const ul = createHTMLel("ul", "navbarUl");
+    ul.append(profile, logout);
+    header.append(logo, ul);
+    root.appendChild(header);
+  }
 };
 
 export const searchBar = () => {

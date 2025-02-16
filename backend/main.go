@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -30,11 +31,6 @@ type SignupRequest struct {
 type Resp struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
-}
-type Post struct {
-	Title      string   `json:"title"`
-	Content    string   `json:"content"`
-	Categories []string `json:"categories"`
 }
 
 var upgrader = websocket.Upgrader{
@@ -93,6 +89,7 @@ func main() {
 	http.HandleFunc("/api/category/{categoryName}", handlecategories)
 	http.HandleFunc("/api/{nickname}", profile)
 	http.HandleFunc("/get_categories", servercategories)
+	http.HandleFunc("/reactions", handleReactions)
 	http.HandleFunc("/ws", handleConnection)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
@@ -102,6 +99,93 @@ func main() {
 
 type Category struct {
 	Name string `json:"name"`
+}
+
+func handleReactions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	cookie := CheckCookie(r)
+	if cookie == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Unauthorized"})
+		return
+	}
+
+	target := r.URL.Query().Get("target")
+	action := r.URL.Query().Get("action")
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil {
+		http.Error(w, "Invalid post/comment ID", http.StatusBadRequest)
+		return
+	}
+
+	if action != "like" && action != "dislike" {
+		http.Error(w, "Invalid action", http.StatusBadRequest)
+		return
+	}
+
+	reaction, err := insertOrUpdateReaction(id, target+"_id", cookie.Value, action)
+	if err != nil {
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		fmt.Println("DB error:", err)
+		return
+	}
+
+	json.NewEncoder(w).Encode(reaction)
+}
+
+func insertOrUpdateReaction(id int, target, token, action string) (Reactinos, error) {
+	var reaction Reactinos
+
+	var userId int
+
+	queryId := "SELECT user_id FROM sessions WHERE token = ?"
+	if err := db.QueryRow(queryId, token).Scan(&userId); err != nil {
+		return reaction, err
+	}
+
+	var existingReaction string
+	checkQuery := "SELECT reaction_type FROM reactions WHERE user_id = ? AND " + target + " = ?"
+	err := db.QueryRow(checkQuery, userId, id).Scan(&existingReaction)
+
+	if err == sql.ErrNoRows {
+		_, err = db.Exec("INSERT INTO reactions (user_id, "+target+", reaction_type) VALUES (?, ?, ?)", userId, id, action)
+		if err != nil {
+			fmt.Println("inserting err", err)
+			return reaction, err
+		}
+	} else if err == nil {
+		if existingReaction == action {
+			_, err = db.Exec("DELETE FROM reactions WHERE user_id = ? AND "+target+" = ?", userId, id)
+			if err != nil {
+				fmt.Println("deleting err")
+			}
+		} else {
+			_, err = db.Exec("UPDATE reactions SET reaction_type = ? WHERE user_id = ? AND "+target+" = ?", action, userId, id)
+			if err != nil {
+				fmt.Println("deleting err")
+			}
+
+		}
+		if err != nil {
+			return reaction, err
+		}
+	} else {
+		return reaction, err
+	}
+
+	countQuery := `
+		SELECT
+			(SELECT COUNT(*) FROM reactions WHERE ` + target + ` = ? AND reaction_type = 'like') AS likes,
+			(SELECT COUNT(*) FROM reactions WHERE ` + target + ` = ? AND reaction_type = 'dislike') AS dislikes
+	`
+	err = db.QueryRow(countQuery, id, id).Scan(&reaction.Likes, &reaction.Dislikes)
+	if err != nil {
+		fmt.Println("selecting likes err", err)
+		return reaction, err
+	}
+	reaction.Action = action
+	return reaction, nil
 }
 
 func servercategories(w http.ResponseWriter, r *http.Request) {
@@ -150,15 +234,16 @@ func signout(w http.ResponseWriter, r *http.Request) {
 }
 
 type Posts struct {
-	Id        int      `json:"id"`
-	Title     string   `json:"title"`
-	Content   string   `json:"content"`
-	Poster    string   `json:"poster"`
-	CreatedAt int      `json:"createdAt"`
-	Reactions Reactios `json:"reactions"`
+	Id         int       `json:"id"`
+	Title      string    `json:"title"`
+	Content    string    `json:"content"`
+	Poster     string    `json:"poster"`
+	CreatedAt  int       `json:"createdAt"`
+	Categories []string  `json:"categories"`
+	Reactions  Reactinos `json:"reactions"`
 }
 
-type Reactios struct {
+type Reactinos struct {
 	Likes    int    `json:"likes"`
 	Dislikes int    `json:"dislikes"`
 	Action   string `json:"action"`
@@ -190,8 +275,8 @@ func getName(w http.ResponseWriter, r *http.Request) {
 
 func getPosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	if CheckCookie(r) == nil {
+	cookie := CheckCookie(r)
+	if cookie == nil {
 		fmt.Println("cookie err")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Unauthorized"})
@@ -208,20 +293,34 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var posts []Posts
-
+	var user_id int
+	getUserId := "SELECT user_id FROM sessions WHERE token = ?"
+	if err := db.QueryRow(getUserId, cookie.Value).Scan(&user_id); err != nil {
+		fmt.Println("getting user err:", err)
+	}
 	query := `
 			SELECT 
 			p.id,
 			p.title,
 			p.content,
 			u.nickname,
-			p.createdAt
+			p.createdAt,
+			COALESCE(SUM(CASE WHEN r.reaction_type = 'like' THEN 1 ELSE 0 END), 0) AS likes,
+			COALESCE(SUM(CASE WHEN r.reaction_type = 'dislike' THEN 1 ELSE 0 END), 0) AS dislikes,
+			COALESCE((
+				SELECT reaction_type
+				FROM reactions
+				WHERE user_id = ? AND post_id = p.id
+				), '') AS user_reaction
 			FROM posts p
 			JOIN users u ON u.id = p.user_id
+			LEFT JOIN reactions r ON r.post_id = p.id
+			GROUP BY p.id
 			ORDER BY p.id DESC 
 			LIMIT 20 OFFSET ?;
 	`
-	rows, err := db.Query(query, offset)
+
+	rows, err := db.Query(query, user_id, offset)
 
 	if err != nil {
 		fmt.Println("quering err:", err)
@@ -230,7 +329,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var post Posts
-		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt); err != nil {
+		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt, &post.Reactions.Likes, &post.Reactions.Dislikes, &post.Reactions.Action); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -242,8 +341,11 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlecategories(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	if CheckCookie(r) == nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Unauthorized"})
 		return
 	}
 
@@ -269,12 +371,12 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	getPostsQuery := `
-		SELECT 
-			p.id, 
-			p.title, 
-			p.content,
-			u.nickname,
-			p.createdAt
+		SELECT DISTINCT
+    		p.id, 
+    		p.title, 
+    		p.content,
+    		u.nickname,
+    		p.createdAt
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		JOIN posts_categories pc ON p.id = pc.post_id
@@ -305,7 +407,6 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(posts)
 }
 
@@ -316,6 +417,7 @@ func profile(w http.ResponseWriter, r *http.Request) {
 func addpost(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
+
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(map[string]string{"message": http.StatusText(http.StatusMethodNotAllowed)})
@@ -326,29 +428,35 @@ func addpost(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/signin", http.StatusUnauthorized)
 		return
 	}
+	var NewPost Posts
 
-	getUserId := "SELECT user_id FROM sessions WHERE token = ?"
+	getUserId := `
+   		SELECT u.nickname, s.user_id
+    	FROM sessions s
+    	JOIN users u ON u.id = s.user_id
+    	WHERE s.token = ?;
+		`
 
 	var user_id int
 
-	err := db.QueryRow(getUserId, cookie.Value).Scan(&user_id)
+	err := db.QueryRow(getUserId, cookie.Value).Scan(&NewPost.Poster, &user_id)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	var NewPost Post
 	json.NewDecoder(r.Body).Decode(&NewPost)
-
 	message, postId := insertPost(NewPost, user_id)
 	if message != "" {
 		fmt.Println(message)
 		http.Error(w, message, http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]int{"postId": postId})
+
+	NewPost.Id = postId
+	json.NewEncoder(w).Encode(NewPost)
 }
 
-func insertPost(post Post, user_id int) (string, int) {
+func insertPost(post Posts, user_id int) (string, int) {
 	if post.Title == "" {
 		fmt.Println("title")
 		return "Titel can not be empty", 0
@@ -363,7 +471,6 @@ func insertPost(post Post, user_id int) (string, int) {
 		fmt.Println("categories")
 		return "You need to choose at least one category", 0
 	}
-
 	query := "INSERT INTO posts (title, content, user_id, createdAt) VALUES (?,?, ?, strftime('%s', 'now'))"
 
 	res, err := db.Exec(query, post.Title, post.Content, user_id)
@@ -469,23 +576,31 @@ func signin(w http.ResponseWriter, r *http.Request) {
 	var siginData signinRequest
 	json.NewDecoder(r.Body).Decode(&siginData)
 	fmt.Println(siginData)
-	message := CheckCredentials(siginData.Userinpt, siginData.Password)
+	message, userId := CheckCredentials(siginData.Userinpt, siginData.Password)
 	if message != "" {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"message": message})
 		return
 	}
 
+	uuid, err := uuid.NewV7()
+	if err != nil {
+		http.Error(w, "try to sign in another time", http.StatusInternalServerError)
+		return
+	}
+
+	// fmt.Println(uuid)
+
 	cookie := http.Cookie{
 		Name:     "forum_token",
-		Value:    "test",
+		Value:    uuid.String(),
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true,
 	}
 
 	query := "INSERT INTO sessions (user_id, token) VALUES (?, ?)"
 
-	_, err := db.Exec(query, 1, "test")
+	_, err = db.Exec(query, userId, uuid.String())
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -494,29 +609,23 @@ func signin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func CheckCredentials(email, password string) string {
-	fmt.Println("email:", email, "password:", password)
+func CheckCredentials(email, password string) (string, int) {
+
 	var hashedPassword string
-	query := "SELECT password FROM users WHERE email = ? OR nickname = ?"
-	err := db.QueryRow(query, email, email).Scan(&hashedPassword)
+	var userId int
+
+	query := "SELECT id, password FROM users WHERE email = ? OR nickname = ?"
+	err := db.QueryRow(query, email, email).Scan(&userId, &hashedPassword)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			fmt.Println("here", err)
-			return "Email not found"
+			return "Email not found", 0
 		}
 		log.Println("Database error:", err)
-		fmt.Println(err)
-		return "Database error"
+		return "Database error", 0
 	}
 
-	// if hashedPassword == "" {
-	// 	return "No password found for user"
-	// }
-
-	// if err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
-	// 	return "Incorrect Password"
-	// }
-	return ""
+	return "", userId
 }
 
 func CheckCookie(r *http.Request) *http.Cookie {
