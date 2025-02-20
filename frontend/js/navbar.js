@@ -1,4 +1,4 @@
-import { creatcategories, createHTMLel } from "./helpers.js";
+import { creatcategories, createHTMLel, layout } from "./helpers.js";
 
 export const root = document.getElementById("root");
 
@@ -59,16 +59,20 @@ export const searchBar = () => {
 
   window.addEventListener("scroll", () => {
     const currentScrollY = window.scrollY;
+    const usersContainer = document.querySelector(".usersContainer");
     if (!currentScrollY) {
       div.classList.add("expanded");
       arrow.classList.add("rotated");
+      usersContainer?.classList.remove("up");
     } else {
       div.classList.remove("expanded");
       arrow.classList.remove("rotated");
+      usersContainer?.classList.add("up");
     }
     if (currentScrollY > lastScrollY) {
       div.classList.remove("expanded");
       arrow.classList.remove("rotated");
+      usersContainer?.classList.add("up");
     }
 
     lastScrollY = currentScrollY;
@@ -86,6 +90,7 @@ export const searchBar = () => {
   addposticon.addEventListener("click", () => {
     const postcontainer = document.querySelector(".addPostContainer");
     postcontainer.classList.toggle("show");
+    layout.classList.toggle("layout");
   });
   div.append(arrow, categoriesSilder, addposticon);
   root.appendChild(div);

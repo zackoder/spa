@@ -1,8 +1,10 @@
-import { getOffset, setOffset } from "./index.js";
+// import { getOffset, setOffset } from "./index.js";
+
 import { navbar, searchBar } from "./navbar.js";
 import { root } from "./navbar.js";
 
-let loadmorPost = true;
+import { routes } from "./index.js";
+import { getuser } from "./getusers.js";
 
 export const createHTMLel = (
   name,
@@ -17,13 +19,36 @@ export const createHTMLel = (
   return element;
 };
 
+export const layout = createHTMLel("div");
+layout.addEventListener("click", () => {
+  const post = document.querySelector(".show");
+  layout.classList.toggle("layout");
+  post.classList.toggle("show");
+});
+
+root.append(layout);
+function navigateTo(path) {
+  history.pushState({}, "", path);
+  handleRoute(path);
+}
+
+async function handleRoute(path) {
+  if (routes[path]) {
+    await routes[path]();
+  } else if (path.startsWith("/category/") || isUsernamePath(path)) {
+    setupPage();
+  } else {
+    navigateTo("/404");
+  }
+}
+
+function isUsernamePath(path) {
+  return /^\/[a-zA-Z0-9_-]+$/.test(path);
+}
+
 const main = createHTMLel("main", "main");
 const sidebarLeft = createHTMLel("aside", "sidebar left-sidebar");
 const sidebarRight = createHTMLel("aside", "sidebar right-sidebar");
-
-// export const addevents = (target, type, path, data) => {
-// target.addEventListener(type, (e) => fetchData(e, path, data));
-// };
 
 export const fetchData = async (path, data) => {
   let resp = await fetch(path, {
@@ -34,12 +59,6 @@ export const fetchData = async (path, data) => {
     body: JSON.stringify(data),
   });
   return resp;
-};
-
-export const fetchcategory = async (path) => {
-  let res = await fetch("/api" + path);
-  let data = await res.json();
-  showPosts("/api/" + path);
 };
 
 export const sendPost = async (title, content, categories, errp) => {
@@ -173,13 +192,36 @@ export const creatcategories = async (categoriesSlider, type) => {
   categoriesSlider.append(left_arrow, categories, rgth_arrow);
 };
 
-export const showPosts = async (path) => {
+let offset = 0;
+
+let nomorPosts = false;
+
+export function setupSPA() {
+  root.addEventListener("click", (e) => {
+    const link = e.target.closest("a");
+    if (link && link.origin === location.origin) {
+      e.preventDefault();
+      offset = 0;
+      nomorPosts = false;
+      const postsContainer = document.querySelector(".postscontainer");
+      if (postsContainer) postsContainer.innerHTML = "";
+
+      navigateTo(link.pathname);
+    }
+  });
+
+  window.addEventListener("popstate", () => handleRoute(location.pathname));
+
+  handleRoute(location.pathname);
+}
+
+const showPosts = async (path) => {
+  if (nomorPosts) return;
   let loading = false;
-  if (path.startsWith("/category/")) path = "/api" + path;
   if (path == "/") path = "/posts";
+  else path = "/api" + path;
   try {
     if (loading) return;
-    let offset = getOffset();
     loading = true;
     let res = await fetch(`${path}?offset=${offset}`);
 
@@ -189,22 +231,17 @@ export const showPosts = async (path) => {
     }
 
     let data = await res.json();
+    console.log(data);
+
     let postsContainer = document.querySelector(".postscontainer");
 
-    if (!postsContainer) {
-      postsContainer = createHTMLel("div", "postscontainer");
-      main.prepend(sidebarLeft, postsContainer, sidebarRight);
-      root.appendChild(main);
-    }
 
     creatPosts(postsContainer, data, "append");
-    setOffset(offset + 20);
+    offset += 20;
   } catch (err) {
     const errorEl = createHTMLel("div", "errorEl", "there is no more posts");
-    document.querySelector(".postscontainer").appendChild(errorEl);
-    console.log(loadmorPost);
-
-    loadmorPost = false;
+    document?.querySelector(".postscontainer")?.appendChild(errorEl);
+    nomorPosts = true;
   } finally {
     loading = false;
   }
@@ -216,7 +253,10 @@ const creatPosts = (container, data, position) => {
       key: "post-id",
       value: postData.id,
     });
-    const postHeader = createHTMLel("h2", "poster", postData.poster);
+    const postHeader = createHTMLel("a", "link poster", postData.poster, {
+      key: "href",
+      value: `/${postData.poster}`,
+    });
     const creationDate = createHTMLel(
       "span",
       "creationDate",
@@ -227,11 +267,14 @@ const creatPosts = (container, data, position) => {
     const like_dislike_containerP = createHTMLel("div", "likeAndDislikeP");
     handleReaction(like_dislike_containerP, "post", postData);
 
+    const postcategories = createcategories(postData.categories);
+
     postcontainer.append(
       postHeader,
       creationDate,
       title,
       content,
+      postcategories,
       like_dislike_containerP
     );
     if (position === "append") container.append(postcontainer);
@@ -239,10 +282,32 @@ const creatPosts = (container, data, position) => {
   });
 };
 
+function createcategories(categories) {
+  const postcategories = createHTMLel("div", "postcategories");
+  categories.forEach((category) => {
+    const categoryLink = createHTMLel("a", "category", category, {
+      key: "href",
+      value: `/category/${category}`,
+    });
+    postcategories.append(categoryLink);
+  });
+
+  postcategories.addEventListener("wheel", (e) => {
+    e.preventDefault();
+
+    postcategories.scrollBy({
+      top: e.deltaY * 0.3,
+      behavior: "smooth",
+    });
+  });
+
+  return postcategories;
+}
+
 function handleReaction(container, target, post, userReaction) {
   const likeBtn = createHTMLel("button", "like" + target, "👍");
   const likeSpan = createHTMLel("span", "likesSpan", post.reactions.likes);
-
+  if (post.reactions.action == "like") likeBtn.classList.add("liked");
   const dislikeBtn = createHTMLel("button", "dislike" + target, "👎");
   const dislikeSpan = createHTMLel(
     "span",
@@ -250,6 +315,7 @@ function handleReaction(container, target, post, userReaction) {
     post.reactions.dislikes
   );
 
+  if (post.reactions.action == "dislike") dislikeBtn.classList.add("disliked");
   container.append(likeBtn, likeSpan, dislikeBtn, dislikeSpan);
 
   if (userReaction === "like") {
@@ -359,14 +425,16 @@ export async function setupPage() {
     const title = createHTMLel("title", "", "Forum");
     document.head.append(style, title);
     addPostPopUp();
+    const postsContainer = createHTMLel("div", "postscontainer");
+    main.prepend(sidebarLeft, postsContainer, sidebarRight);
+    root.appendChild(main);
+
+    await getuser(sidebarLeft);
   }
+  showPosts(location.pathname);
 }
 
 export const trackscroll = () => {
-  if (!loadmorPost) {
-    document.removeEventListener("scrollend");
-    return;
-  }
   document.addEventListener("scrollend", () => {
     if (window.innerHeight + window.scrollY >= root.offsetHeight - 200) {
       showPosts(location.pathname);

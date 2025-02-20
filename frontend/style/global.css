@@ -1,11 +1,12 @@
 :root {
   --bg: #deeaf5;
-  --bg1: #f2f2f2;
-  --text: #615e5e;
+  --header-bg: #f4f5fe;
+  --bg1: #ecf2f7;
+  --text: #444;
   --font: sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   --hover-color: #000000;
-  --shadow: 0 0 10px 2px rgb(65, 65, 65);
+  --shadow: 0 0 10px 2px rgba(65, 65, 65, 0.671);
 }
 
 * {

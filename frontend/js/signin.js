@@ -66,8 +66,23 @@ export const signin = () => {
     });
   });
 
-  form.append(h1, Emaillbl, Emailinpt, passwordlbl, passwordinpt, submitbtn);
+  const signup = createHTMLel("p", "signuplikn", "click the link to ");
+  const signupLink = createHTMLel("a", "link", "Sign Up", {
+    key: "href",
+    value: "/signup",
+  });
+  signup.appendChild(signupLink);
+  form.append(
+    h1,
+    Emaillbl,
+    Emailinpt,
+    passwordlbl,
+    passwordinpt,
+    signup,
+    submitbtn
+  );
   formcontainer.appendChild(form);
+  root.innerHTML = "";
   root.appendChild(formcontainer);
 };
 
@@ -225,7 +240,12 @@ export const signup = () => {
       }
     });
   });
-
+  const signin = createHTMLel("p", "signuplikn", "click the link to ");
+  const signinLink = createHTMLel("a", "link", "Sign Up", {
+    key: "href",
+    value: "/siappendChildgnin",
+  });
+  signin.appendChild(signinLink);
   form.append(
     h1,
     nicknameLbl,
@@ -246,9 +266,11 @@ export const signup = () => {
     passwordinpt,
     cpasswordlbl,
     cpasswordinpt,
+    signin,
     submitbtn
   );
   formcontainer.appendChild(form);
+  root.innerHTML = "";
   root.appendChild(formcontainer);
 };
 

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +19,55 @@ import (
 )
 
 var db *sql.DB
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+type Manager struct {
+	clients ClientList
+	sync.RWMutex
+}
+
+func NewManager() *Manager {
+	return &Manager{
+		clients: make(ClientList),
+	}
+}
+
+func (m *Manager) serveWebsocket(w http.ResponseWriter, r *http.Request) {
+	cookie := CheckCookie(r)
+	if cookie == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	user_id := getUserId(cookie.Value)
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	client := NewClient(conn, m, user_id)
+	m.addClient(client)
+	go client.readmessages()
+}
+
+func (m *Manager) addClient(client *Client) {
+	m.Lock()
+	defer m.Unlock()
+	m.clients[client] = true
+}
+
+func (m *Manager) removeClient(client *Client) {
+	m.Lock()
+	defer m.Unlock()
+	if _, ok := m.clients[client]; ok {
+		client.Connection.Close()
+		delete(m.clients, client)
+	}
+}
 
 type SignupRequest struct {
 	NickName  string `json:"nickName"`
@@ -31,14 +82,6 @@ type SignupRequest struct {
 type Resp struct {
 	Message string `json:"message"`
 	Code    int    `json:"code"`
-}
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
 }
 
 func handleConnection(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +121,11 @@ func main() {
 	fs := http.FileServer(http.Dir("../frontend"))
 	http.Handle("/frontend/", http.StripPrefix("/frontend/", fs))
 
+	manager := NewManager()
+
 	http.HandleFunc("/", HomePage)
 	http.HandleFunc("/getNickName", getName)
+	http.HandleFunc("/getusers", getUsers)
 	http.HandleFunc("/signin", signinPage)
 	http.HandleFunc("/sign-in", signin)
 	http.HandleFunc("/signup", signup)
@@ -90,11 +136,111 @@ func main() {
 	http.HandleFunc("/api/{nickname}", profile)
 	http.HandleFunc("/get_categories", servercategories)
 	http.HandleFunc("/reactions", handleReactions)
-	http.HandleFunc("/ws", handleConnection)
+	http.HandleFunc("/ws", manager.serveWebsocket)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type Name struct {
+	Name string `json:"nickname"`
+}
+
+type ClientList map[*Client]bool
+
+type Client struct {
+	Connection *websocket.Conn
+	manager    *Manager
+	Client_id  int
+}
+
+type Message struct {
+	To      string `json:"to"`
+	Type    string `json:"type"`
+	Content string `json:"content"`
+}
+
+func (c *Client) readmessages() {
+	defer func() {
+		c.manager.removeClient(c)
+	}()
+	for {
+		messagetype, payload, err := c.Connection.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				fmt.Println(err)
+			}
+			break
+		}
+		var msg Message
+
+		if err := json.Unmarshal(payload, &msg); err != nil {
+			fmt.Println(err)
+		}
+		query := "SELECT id FROM users WHERE nickname = ?"
+
+		var receiver_id int
+		if err := db.QueryRow(query, msg.To).Scan(&receiver_id); err != nil {
+			return
+		}
+		fmt.Println(receiver_id)
+		fmt.Println("type", messagetype)
+		fmt.Println(msg)
+		fmt.Println(c.Client_id)
+		if !isOnlien(c, receiver_id) {
+			fmt.Println("receiver is offline", msg.To)
+			c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "failed", "message": "User is offline"}`))
+			continue
+		}
+	}
+}
+
+func isOnlien(c *Client, receiver_id int) bool {
+	for client := range c.manager.clients {
+		if client.Client_id == receiver_id {
+			return true
+		}
+	}
+	return false
+}
+
+func NewClient(conn *websocket.Conn, manager *Manager, user_id int) *Client {
+	return &Client{
+		Connection: conn,
+		manager:    manager,
+		Client_id:  user_id,
+	}
+}
+
+func getUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	cooki := CheckCookie(r)
+	if cooki == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var names []Name
+
+	user_id := getUserId(cooki.Value)
+	query := "SELECT nickname FROM users WHERE id <> ?"
+	rows, err := db.Query(query, user_id)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for rows.Next() {
+		var name Name
+		if err := rows.Scan(&name.Name); err != nil {
+			fmt.Println("error acrosed while scanning nicknmae :", err)
+		}
+		names = append(names, name)
+	}
+
+	defer rows.Close()
+	json.NewEncoder(w).Encode(names)
 }
 
 type Category struct {
@@ -283,21 +429,11 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	offset, err := strconv.ParseInt(r.URL.Query().Get("offset"), 10, 64)
-	_ = offset
-	if err != nil {
-		fmt.Println("parssing offset err:", err)
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Forbidden"})
-		return
-	}
+	offset := r.URL.Query().Get("offset")
 
 	var posts []Posts
-	var user_id int
-	getUserId := "SELECT user_id FROM sessions WHERE token = ?"
-	if err := db.QueryRow(getUserId, cookie.Value).Scan(&user_id); err != nil {
-		fmt.Println("getting user err:", err)
-	}
+	user_id := getUserId(cookie.Value)
+
 	query := `
 			SELECT 
 			p.id,
@@ -316,7 +452,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 			JOIN users u ON u.id = p.user_id
 			LEFT JOIN reactions r ON r.post_id = p.id
 			GROUP BY p.id
-			ORDER BY p.id DESC 
+			ORDER BY p.id DESC
 			LIMIT 20 OFFSET ?;
 	`
 
@@ -337,18 +473,78 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer rows.Close()
+
+	getPostsCategories(posts)
+
 	json.NewEncoder(w).Encode(posts)
+}
+
+func getUserId(token string) int {
+	var user_id int
+	getUserId := "SELECT user_id FROM sessions WHERE token = ?"
+	if err := db.QueryRow(getUserId, token).Scan(&user_id); err != nil {
+		fmt.Println("getting user err:", err)
+		return user_id
+	}
+	return user_id
+}
+
+func getPostsCategories(posts []Posts) {
+	if len(posts) > 0 {
+		placeholders := strings.Repeat("?,", len(posts)-1) + "?"
+		getCategoriesQuery := `
+        SELECT pc.post_id, c.name
+        FROM posts_categories pc
+        JOIN categories c ON pc.category_id = c.id
+        WHERE pc.post_id IN (` + placeholders + `)
+    `
+
+		args := make([]interface{}, len(posts))
+		for i, post := range posts {
+			args[i] = post.Id
+		}
+
+		categoryRows, err := db.Query(getCategoriesQuery, args...)
+		if err != nil {
+			fmt.Println("Error fetching categories:", err)
+			return
+		}
+		defer categoryRows.Close()
+
+		categoryMap := make(map[int][]string)
+		for categoryRows.Next() {
+			var postID int
+			var categoryName string
+			if err := categoryRows.Scan(&postID, &categoryName); err != nil {
+				fmt.Println("Error scanning categories:", err)
+				return
+			}
+			categoryMap[postID] = append(categoryMap[postID], categoryName)
+		}
+
+		for i := range posts {
+			if categories, exists := categoryMap[posts[i].Id]; exists {
+				posts[i].Categories = categories
+			}
+		}
+	}
 }
 
 func handlecategories(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	if CheckCookie(r) == nil {
+	cookie := CheckCookie(r)
+	if cookie == nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"message": "Unauthorized"})
 		return
 	}
+	var user_id int
+	getUserId := "SELECT user_id FROM sessions WHERE token = ?;"
 
+	if err := db.QueryRow(getUserId, cookie.Value).Scan(&user_id); err != nil {
+		fmt.Println("getting user id inside categories function", err)
+		return
+	}
 	var categoryId int
 	category, err := url.QueryUnescape(r.PathValue("categoryName"))
 
@@ -356,7 +552,11 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
-	offset := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	getCategoryIdQuery := "SELECT id FROM categories WHERE name = ?"
 	if err := db.QueryRow(getCategoryIdQuery, category).Scan(&categoryId); err != nil {
 		if err == sql.ErrNoRows {
@@ -371,33 +571,41 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	getPostsQuery := `
-		SELECT DISTINCT
-    		p.id, 
-    		p.title, 
-    		p.content,
-    		u.nickname,
-    		p.createdAt
+		SELECT 
+			p.id, 
+			p.title, 
+			p.content,
+			u.nickname,
+			p.createdAt,
+			COALESCE(COUNT(CASE WHEN r.reaction_type = 'like' THEN 1 END), 0) AS likes,
+			COALESCE(COUNT(CASE WHEN r.reaction_type = 'dislike' THEN 1 END), 0) AS dislikes,
+			COALESCE((
+				SELECT reaction_type
+				FROM reactions
+				WHERE user_id = ? AND post_id = p.id
+			), '') AS user_reaction
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		JOIN posts_categories pc ON p.id = pc.post_id
+		LEFT JOIN reactions r ON r.post_id = p.id
 		WHERE pc.category_id = ?
+		GROUP BY p.id, p.title, p.content, u.nickname, p.createdAt
 		ORDER BY p.id DESC
 		LIMIT 20 OFFSET ?;
 	`
 
-	rows, err := db.Query(getPostsQuery, categoryId, offset)
+	rows, err := db.Query(getPostsQuery, user_id, categoryId, offset)
 	if err != nil {
-		fmt.Println("Database error:", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
+		fmt.Println("erro while getting posts:", err)
 	}
+
 	defer rows.Close()
 
 	var posts []Posts
 
 	for rows.Next() {
 		var post Posts
-		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt); err != nil {
+		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt, &post.Reactions.Likes, &post.Reactions.Dislikes, &post.Reactions.Action); err != nil {
 			fmt.Println("Row scan error:", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
@@ -407,11 +615,67 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
+	getPostsCategories(posts)
+
 	json.NewEncoder(w).Encode(posts)
 }
 
 func profile(w http.ResponseWriter, r *http.Request) {
+	cookie := CheckCookie(r)
+	if cookie == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
+	nickname := r.PathValue("nickname")
+	offset := r.URL.Query().Get("offset")
+	user_id := getUserId(cookie.Value)
+	fmt.Println("nickname:", nickname)
+	fmt.Println("offset:", offset)
+	fmt.Println("user id:", user_id)
+	query := `
+			SELECT
+			    p.id,
+			    p.title,
+			    p.content,
+			    u.nickname,
+			    p.createdAt,
+			    COALESCE(SUM(CASE WHEN r.reaction_type = 'like' THEN 1 ELSE 0 END), 0) AS likes,
+			    COALESCE(SUM(CASE WHEN r.reaction_type = 'dislike' THEN 1 ELSE 0 END), 0) AS dislikes,
+			    COALESCE((
+			        SELECT reaction_type
+			        FROM reactions
+			        WHERE user_id = ? AND post_id = p.id
+			    ), '') AS user_reaction
+			FROM posts p
+			JOIN users u ON u.id = p.user_id
+			LEFT JOIN reactions r ON r.post_id = p.id
+			WHERE u.nickname = ?
+			GROUP BY p.id
+			ORDER BY p.id DESC
+			LIMIT 20 OFFSET ?;
+	`
+	rows, err := db.Query(query, user_id, nickname, offset)
+	if err != nil {
+		fmt.Printf("error while geting user %s profile\n", nickname)
+	}
+
+	var posts []Posts
+
+	for rows.Next() {
+		var post Posts
+		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt, &post.Reactions.Likes, &post.Reactions.Dislikes, &post.Reactions.Action); err != nil {
+			fmt.Println(err)
+			return
+		}
+		posts = append(posts, post)
+	}
+
+	getPostsCategories(posts)
+
+	defer rows.Close()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
 }
 
 func addpost(w http.ResponseWriter, r *http.Request) {
@@ -688,7 +952,7 @@ func insertdb(db *sql.DB) {
   		user_id INTEGER NOT NULL,
    		post_id INTEGER,
    		comment_id INTEGER,
-    	reaction_type TEXT NOT NULL, -- e.g., 'like', 'love', 'angry', etc.
+    	reaction_type TEXT NOT NULL,
     	date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     	FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
@@ -706,7 +970,17 @@ func insertdb(db *sql.DB) {
 		FOREIGN KEY (post_id) REFERENCES posts(id),
 		FOREIGN KEY (category_id) REFERENCES categories(id)
 	  );
-
+	  
+	  CREATE TABLE IF NOT EXISTS messages (
+	  	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	  	sender_id INTEGER NOT NULL,
+		reciever_id INTEGER NOT NULL,
+		content TEXT,
+		is_read BOOLEAN DEFAULT FALSE,
+		creation_date INTEGER,
+		FOREIGN KEY (sender_id) REFERENCES users(id),
+		FOREIGN KEY (reciever_id) REFERENCES users(id)
+	  );
 	`
 	_, err := db.Exec(query)
 	if err != nil {
