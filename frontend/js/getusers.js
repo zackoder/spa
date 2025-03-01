@@ -160,7 +160,12 @@ function fetchMsg(form, to, errEl, body) {
         );
         messageEl.classList.add("sent");
         body.prepend(messageEl);
-
+        let users = document.querySelector(".usersContainer");
+        document.querySelectorAll(".user").forEach((user) => {
+          if (user.children[0].textContent === to) {
+            users.prepend(user);
+          }
+        });
         messagesOffset++;
         inpt.value = "";
       }
