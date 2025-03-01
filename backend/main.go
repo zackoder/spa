@@ -247,8 +247,19 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 	var names []utils.Name
 
 	user_id := getUserId(cooki.Value)
-	query := "SELECT nickname FROM users WHERE id <> ?"
-	rows, err := db.Query(query, user_id)
+	query := `
+	SELECT u.id, u.nickname
+		FROM users u
+		LEFT JOIN messages m
+		    ON (u.id = m.sender_id OR u.id = m.reciever_id)
+		    AND (m.sender_id = ? OR m.reciever_id = ?)
+		WHERE u.id <> ?
+		GROUP BY u.nickname
+		ORDER BY 
+    		MAX(m.creation_date) DESC,
+    		u.nickname ASC;
+	`
+	rows, err := db.Query(query, user_id, user_id, user_id)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -256,7 +267,7 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var name utils.Name
-		if err := rows.Scan(&name.Name); err != nil {
+		if err := rows.Scan(&name.Id, &name.Name); err != nil {
 			fmt.Println("error acrosed while scanning nicknmae :", err)
 		}
 		names = append(names, name)
