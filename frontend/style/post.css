@@ -147,11 +147,22 @@
   background-color: var(--bg);
   transition: all 200ms ease-out;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .user:hover {
   box-shadow: var(--shadow);
   margin: 5px 0;
+}
+
+.nickname {
+}
+
+.stat {
+  font-size: 0.75rem;
+  color: gray;
 }
 
 .notification {

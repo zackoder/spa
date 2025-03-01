@@ -1,5 +1,6 @@
 import { createmsgcontaine } from "./getusers.js";
 import { createHTMLel } from "./helpers.js";
+import { user } from "./navbar.js";
 
 export let socket = null;
 
@@ -10,7 +11,10 @@ export const socketEvents = () => {
 
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
-    console.log(data);
+    if (data.user) {
+      handleconnection(data);
+      return;
+    }
 
     const senderchatbox = document.querySelector("#" + data.from);
 
@@ -26,26 +30,24 @@ export const socketEvents = () => {
         newMessage = createmsgcontaine(data, data.from);
         newMessage.classList.add("get");
         senderchatbox.children[1].prepend(newMessage);
+        scrolldown(parent, newMessage);
       }
-      const notifacation = document
-        .querySelectorAll(`.user`)
-        .forEach((user) => {
-          if (user.textContent === data.from) {
-            const notificationEl = createHTMLel("span", "notification");
-            user.append(notificationEl);
-          }
-        });
+      document.querySelectorAll(`.user`).forEach((user) => {
+
+        if (user.children[0].textContent === data.from) {
+          const notificationEl = createHTMLel("span", "notification");
+          console.log("hello");
+          user.append(notificationEl);
+        }
+      });
     } else {
       newMessage = createmsgcontaine(data, data.from);
 
       newMessage.classList.add("get");
 
       senderchatbox.children[1].prepend(newMessage);
+      scrolldown(parent, newMessage);
     }
-
-    setTimeout(() => {
-      parent.scrollTop = parent.scrollHeight + newMessage.offsetHeight;
-    }, 0);
   };
 
   socket.addEventListener("open", () => {
@@ -53,7 +55,28 @@ export const socketEvents = () => {
   });
 };
 
+function scrolldown(parent, newMessage) {
+  setTimeout(() => {
+    parent.scrollTop = parent.scrollHeight + newMessage.offsetHeight;
+  }, 0);
+}
+
 export function upgradeconnection() {
   if (socket !== null) return;
   socket = new WebSocket("ws://localhost:8080/ws");
+}
+
+function handleconnection(data) {
+  let users = document.querySelectorAll(".user");
+  if (data.user === "online") {
+    users.forEach((user) => {
+      if (user.children[0].textContent === data.nickname)
+        user.children[1].textContent = "online";
+    });
+  } else if (data.user === "offline") {
+    users.forEach((user) => {
+      if (user.children[0].textContent === data.nickname)
+        user.children[1].textContent = "offline";
+    });
+  }
 }

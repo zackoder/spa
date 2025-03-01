@@ -9,7 +9,8 @@ export const getuser = async (sidebar) => {
   nickNames.forEach((nickName) => {
     const user = createHTMLel("div", "user");
     const nickname = createHTMLel("span", "nickname", nickName.nickname);
-    user.append(nickname);
+    const stat = createHTMLel("span", "stat", "offline");
+    user.append(nickname, stat);
     const userpopup = addeventToUser(user, nickName.nickname);
     usersContainer.append(user);
     sidebar.append(userpopup);
@@ -189,15 +190,13 @@ async function sendMessage(receiver, content) {
         newMessage.classList.add("get");
         senderchatbox.children[1].prepend(newMessage);
         setTimeout(() => {
-          console.log("hello");
-          parent.scrollTop = parent.scrollHeight + 50;
+          parent.scrollTop = parent.scrollHeight + newMessage.offsetHeight + 10;
         }, 10);
         return;
       }
 
       if (senderchatbox && !senderchatbox.classList.contains(".showen")) {
         console.log("it is hiden");
-        console.log(senderchatbox.children[1].children);
 
         if (senderchatbox.children[1].children.length !== 0) {
           console.log("it has cheldren");
