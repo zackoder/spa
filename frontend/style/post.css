@@ -17,6 +17,11 @@
 }
 
 .postscontainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
   padding-bottom: 20px;
 }
 
@@ -33,6 +38,7 @@
   flex-direction: column;
   box-shadow: var(--shadow);
   max-width: 800px;
+  width: 100%;
 }
 
 .poster {
@@ -130,6 +136,7 @@
 }
 
 .user {
+  position: relative;
   width: 90%;
   max-width: 250px;
   height: 50px;
@@ -137,7 +144,7 @@
   padding: 10px;
   border: 1px solid black;
   border-radius: 15px;
-  background-color: rgb(224, 240, 250);
+  background-color: var(--bg);
   transition: all 200ms ease-out;
   cursor: pointer;
 }
@@ -147,11 +154,52 @@
   margin: 5px 0;
 }
 
+.notification {
+  width: 20px;
+  height: 20px;
+  display: block;
+  background-color: green;
+  border-radius: 50%;
+  position: absolute;
+  top: -10%;
+  left: 95%;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.message {
+  width: 100%;
+  height: 50px;
+  margin: 20px 0;
+  padding: 10px;
+}
+
+.sender {
+  padding-left: 10px;
+}
+
+.sent {
+  align-self: self-end;
+}
+
+.get,
+.sent {
+  width: 50%;
+}
+
+.content {
+  display: block;
+  border: 1px solid black;
+  border-radius: 30px;
+  padding: 10px;
+  word-break: break-word;
+}
+
 .chatContainer {
   display: flex;
   flex-direction: column;
-  height: 300px;
-  width: 400px;
+  height: 400px;
+  width: 600px;
   z-index: 10;
   border: 1px black solid;
   position: fixed;
@@ -159,8 +207,9 @@
   left: 50%;
   transform: translate(-300%, -50%);
   color: white;
-  background: lightblue;
+  background: var(--bg);
   transition: all 1s ease;
+  border-radius: 5px;
   opacity: 0;
   z-index: -3;
 }
@@ -189,8 +238,46 @@
 .body {
   width: 98%;
   margin: 0 auto;
-  height: 260px;
-  background-color: white;
+  height: 300px;
+  background-color: var(--bg1);
   border: 1px black dashed;
   color: black;
+  display: flex;
+  flex-direction: column-reverse;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  border-radius: 10px;
+  padding-bottom: 20px;
+}
+
+.messagesForm {
+  height: 60px;
+  width: 90%;
+  margin: 20px auto 0;
+}
+
+.sendmessage {
+  width: 90%;
+  height: 30px;
+  margin-right: 10px;
+  border-radius: 10px;
+  padding-left: 10px;
+  border: dashed 2px;
+}
+
+.submitmsg {
+  height: 30px;
+  width: 30px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.384);
+  border: none;
+  font-weight: 600;
+  border: 1px rgba(128, 128, 128, 0.705) solid;
+  box-shadow: 0 0 5px 2px rgba(48, 48, 48, 0.582);
+  transition: all 0.5s ease-in-out;
+}
+
+.submitmsg:hover {
+  background-color: rgba(0, 0, 0, 0.329);
+  box-shadow: 0 2px 3px 5px rgba(48, 48, 48, 0.582);
 }

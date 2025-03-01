@@ -1,6 +1,8 @@
 import { creatcategories, createHTMLel, layout } from "./helpers.js";
+export let user = "";
 
 export const root = document.getElementById("root");
+root.scrollTop = root.scrollHeight;
 
 export const navbar = async () => {
   let res = await fetch("/getNickName");
@@ -26,6 +28,9 @@ export const navbar = async () => {
       key: "href",
       value: `/${data.nickname}`,
     });
+
+    user = data.nickname;
+    console.log(data.nickname);
 
     const logout = createHTMLel("a", "link", "Sing Out", {
       key: "href",
@@ -91,6 +96,8 @@ export const searchBar = () => {
     const postcontainer = document.querySelector(".addPostContainer");
     postcontainer.classList.toggle("show");
     layout.classList.toggle("layout");
+    if (layout.classList.contains("layout"))
+      document.body.style.overflow = "hidden";
   });
   div.append(arrow, categoriesSilder, addposticon);
   root.appendChild(div);

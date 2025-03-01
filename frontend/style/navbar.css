@@ -86,14 +86,13 @@
   gap: 12px;
   overflow-x: auto;
   scroll-behavior: smooth;
-  scrollbar-width: none; /* Hide scrollbar for Firefox */
-  -ms-overflow-style: none; /* Hide scrollbar for IE */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   white-space: nowrap;
-  padding: 10px 0;
+  padding: 10px;
   width: 100%;
 }
 
-/* Hide scrollbar for Chrome, Safari */
 .categories::-webkit-scrollbar {
   display: none;
 }
@@ -154,7 +153,7 @@
 }
 
 .errorp {
-  display: none;
+  margin: 20px 0 0 20px;
   color: red;
   font-size: 1.25rem;
 }

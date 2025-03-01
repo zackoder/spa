@@ -1,10 +1,9 @@
-// import { getOffset, setOffset } from "./index.js";
-
 import { navbar, searchBar } from "./navbar.js";
 import { root } from "./navbar.js";
 
 import { routes } from "./index.js";
 import { getuser } from "./getusers.js";
+import { socketEvents, upgradeconnection } from "./chatFunctionality.js";
 
 export const createHTMLel = (
   name,
@@ -22,12 +21,13 @@ export const createHTMLel = (
 export const layout = createHTMLel("div");
 layout.addEventListener("click", () => {
   const post = document.querySelector(".show");
+  document.body.style.overflow = "";
   layout.classList.toggle("layout");
   post.classList.toggle("show");
 });
 
 root.append(layout);
-function navigateTo(path) {
+export function navigateTo(path) {
   history.pushState({}, "", path);
   handleRoute(path);
 }
@@ -96,6 +96,7 @@ export const sendPost = async (title, content, categories, errp) => {
   let path = decodeURIComponent(location.pathname);
   for (let i = 0; i < categories.length; i++) {
     if (path === "/" || path.endsWith(categories[i])) {
+      offset++;
       creatPosts(
         document.querySelector(".postscontainer"),
         [newpost],
@@ -201,6 +202,13 @@ export function setupSPA() {
     const link = e.target.closest("a");
     if (link && link.origin === location.origin) {
       e.preventDefault();
+      if (link.textContent === "Sign In" || link.textContent === "Sign Up") {
+        let title = document.head.querySelector("title");
+        let logstyle = document.querySelector(".log");
+        document.head.removeChild(title);
+        document.head.removeChild(logstyle);
+        root.innerHTML = "";
+      }
       offset = 0;
       nomorPosts = false;
       const postsContainer = document.querySelector(".postscontainer");
@@ -226,15 +234,13 @@ const showPosts = async (path) => {
     let res = await fetch(`${path}?offset=${offset}`);
 
     if (!res.ok) {
-      location.href = "/signin";
+      navigateTo("/signin");
       return;
     }
 
     let data = await res.json();
-    console.log(data);
 
     let postsContainer = document.querySelector(".postscontainer");
-
 
     creatPosts(postsContainer, data, "append");
     offset += 20;
@@ -391,7 +397,7 @@ const oneday = 60 * 60 * 24;
 const onehour = 60 * 60;
 const oneminut = 60;
 
-function formatDate(time) {
+export function formatDate(time) {
   if (!time) time = Date.now() / 1000 - 1;
   let timeText;
   const date = Date.now() / 1000;
@@ -415,11 +421,11 @@ function formatDate(time) {
 export async function setupPage() {
   if (!document.querySelector(".header")) {
     await navbar();
-    searchBar();
     const style = createHTMLel("link", "", "", {
       key: "href",
       value: "/frontend/style/post.css",
     });
+    searchBar();
 
     style.rel = "stylesheet";
     const title = createHTMLel("title", "", "Forum");
@@ -430,6 +436,8 @@ export async function setupPage() {
     root.appendChild(main);
 
     await getuser(sidebarLeft);
+    upgradeconnection();
+    socketEvents();
   }
   showPosts(location.pathname);
 }
@@ -440,4 +448,15 @@ export const trackscroll = () => {
       showPosts(location.pathname);
     }
   });
+};
+
+export const throttle = (func, wait) => {
+  let lastCall = 0;
+  return function (...args) {
+    let now = Date.now();
+    if (now - lastCall >= wait) {
+      func.apply(this, args);
+      lastCall = now;
+    }
+  };
 };

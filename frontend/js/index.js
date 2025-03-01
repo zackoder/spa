@@ -1,13 +1,9 @@
 import { signin, signout, signup } from "./signin.js";
-import { setupPage, trackscroll, setupSPA, createHTMLel } from "./helpers.js";
+import { setupPage, trackscroll, setupSPA } from "./helpers.js";
 
 import { notFound } from "./errpage.js";
 
-export const socket = new WebSocket("ws://localhost:8080/ws");
-
-socket.addEventListener("open", () => {
-  console.log("connected..");
-});
+export const originalHTML = document.documentElement.innerHTML;
 
 document.addEventListener("DOMContentLoaded", async () => {
   setupSPA();
