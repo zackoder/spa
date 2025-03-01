@@ -64,7 +64,9 @@ func (m *Manager) addClient(client *Client) {
 	m.clients[client] = true
 	for c := range m.clients {
 		if c != client {
-			c.Connection.WriteJSON(map[string]string{"new connection": client.Nickname})
+			c.Connection.WriteJSON(map[string]string{"user": "online", "nickname": client.Nickname})
+			client.Connection.WriteJSON(map[string]string{"user": "online", "nickname": c.Nickname})
+			continue
 		}
 	}
 }
@@ -76,7 +78,7 @@ func (m *Manager) removeClient(client *Client) {
 		client.Connection.Close()
 		delete(m.clients, client)
 		for c := range m.clients {
-			c.Connection.WriteJSON(map[string]string{"user ofline": client.Nickname})
+			c.Connection.WriteJSON(map[string]string{"user": "offline", "nickname": client.Nickname})
 		}
 	}
 }
