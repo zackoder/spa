@@ -27,7 +27,6 @@ type Reactinos struct {
 }
 
 type Name struct {
-	Id   int
 	Name string `json:"nickname"`
 }
 

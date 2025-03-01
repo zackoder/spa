@@ -8,12 +8,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"reat-time-forum/queries"
-	utils "reat-time-forum/structs"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"reat-time-forum/queries"
+	utils "reat-time-forum/structs"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -63,7 +64,7 @@ func (m *Manager) addClient(client *Client) {
 	m.clients[client] = true
 	for c := range m.clients {
 		if c != client {
-			c.Connection.WriteJSON(map[string]string{"new connection": c.Nickname})
+			c.Connection.WriteJSON(map[string]string{"new connection": client.Nickname})
 		}
 	}
 }
@@ -74,10 +75,9 @@ func (m *Manager) removeClient(client *Client) {
 	if _, ok := m.clients[client]; ok {
 		client.Connection.Close()
 		delete(m.clients, client)
-	}
-
-	for c := range m.clients {
-		c.Connection.WriteJSON(map[string]string{"user ofline": c.Nickname})
+		for c := range m.clients {
+			c.Connection.WriteJSON(map[string]string{"user ofline": client.Nickname})
+		}
 	}
 }
 
@@ -118,7 +118,6 @@ func main() {
 }
 
 func fetchemessages(w http.ResponseWriter, r *http.Request) {
-
 	cookie := CheckCookie(r)
 
 	if cookie == nil {
@@ -134,7 +133,6 @@ func fetchemessages(w http.ResponseWriter, r *http.Request) {
 	receiver_id, err := queries.GetUserIdByNickname(db, receiverNickname)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
-
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -248,7 +246,7 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 
 	user_id := getUserId(cooki.Value)
 	query := `
-	SELECT u.id, u.nickname
+	SELECT u.nickname
 		FROM users u
 		LEFT JOIN messages m
 		    ON (u.id = m.sender_id OR u.id = m.reciever_id)
@@ -267,7 +265,7 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var name utils.Name
-		if err := rows.Scan(&name.Id, &name.Name); err != nil {
+		if err := rows.Scan(&name.Name); err != nil {
 			fmt.Println("error acrosed while scanning nicknmae :", err)
 		}
 		names = append(names, name)
@@ -416,7 +414,6 @@ func signout(w http.ResponseWriter, r *http.Request) {
 }
 
 func getName(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 
 	cookie := CheckCookie(r)
@@ -477,7 +474,6 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	`
 
 	rows, err := db.Query(query, user_id, offset)
-
 	if err != nil {
 		fmt.Println("quering err:", err)
 		return
@@ -577,7 +573,6 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 	}
 	var categoryId int
 	category, err := url.QueryUnescape(r.PathValue("categoryName"))
-
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -709,7 +704,6 @@ func profile(w http.ResponseWriter, r *http.Request) {
 }
 
 func addpost(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 
 	if r.Method != http.MethodPost {
@@ -768,7 +762,6 @@ func insertPost(post utils.Posts, user_id int) (string, int) {
 	query := "INSERT INTO posts (title, content, user_id, createdAt) VALUES (?,?, ?, strftime('%s', 'now'))"
 
 	res, err := db.Exec(query, post.Title, post.Content, user_id)
-
 	if err != nil {
 		fmt.Println("inserting err:", err)
 		return "Try to post another time", 0
@@ -858,7 +851,6 @@ type signinRequest struct {
 }
 
 func signin(w http.ResponseWriter, r *http.Request) {
-
 	w.Header().Set("Content-Type", "application/json")
 
 	var siginData signinRequest
@@ -898,7 +890,6 @@ func signin(w http.ResponseWriter, r *http.Request) {
 }
 
 func CheckCredentials(email, password string) (string, int) {
-
 	var hashedPassword string
 	var userId int
 
