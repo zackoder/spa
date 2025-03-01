@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"reat-time-forum/queries"
+	utils "reat-time-forum/structs"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,12 +46,13 @@ func (m *Manager) serveWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user_id := getUserId(cookie.Value)
+	user_nickname := getUserNickname(user_id)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	client := NewClient(conn, m, user_id)
+	client := NewClient(conn, m, user_id, user_nickname)
 	m.addClient(client)
 	go client.readmessages()
 }
@@ -58,6 +61,11 @@ func (m *Manager) addClient(client *Client) {
 	m.Lock()
 	defer m.Unlock()
 	m.clients[client] = true
+	for c := range m.clients {
+		if c != client {
+			c.Connection.WriteJSON(map[string]string{"new connectio": c.Nickname})
+		}
+	}
 }
 
 func (m *Manager) removeClient(client *Client) {
@@ -67,43 +75,9 @@ func (m *Manager) removeClient(client *Client) {
 		client.Connection.Close()
 		delete(m.clients, client)
 	}
-}
 
-type SignupRequest struct {
-	NickName  string `json:"nickName"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Gender    string `json:"gender"`
-	Age       string `json:"age"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-}
-
-type Resp struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
-}
-
-func handleConnection(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Connection", r.Header.Get("Connection"))
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer conn.Close()
-	for {
-		messageType, data, err := conn.ReadMessage()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		fmt.Println("Recieved message:", string(data))
-		if err := conn.WriteMessage(messageType, data); err != nil {
-			fmt.Println(err)
-			return
-		}
+	for c := range m.clients {
+		c.Connection.WriteJSON(map[string]string{"user ofline": c.Nickname})
 	}
 }
 
@@ -126,9 +100,8 @@ func main() {
 	http.HandleFunc("/", HomePage)
 	http.HandleFunc("/getNickName", getName)
 	http.HandleFunc("/getusers", getUsers)
-	http.HandleFunc("/signin", signinPage)
 	http.HandleFunc("/sign-in", signin)
-	http.HandleFunc("/signup", signup)
+	http.HandleFunc("/sign-up", signup)
 	http.HandleFunc("/signout", signout)
 	http.HandleFunc("/addpost", addpost)
 	http.HandleFunc("/posts", getPosts)
@@ -136,6 +109,7 @@ func main() {
 	http.HandleFunc("/api/{nickname}", profile)
 	http.HandleFunc("/get_categories", servercategories)
 	http.HandleFunc("/reactions", handleReactions)
+	http.HandleFunc("/api/messages", fetchemessages)
 	http.HandleFunc("/ws", manager.serveWebsocket)
 
 	if err := http.ListenAndServe(port, nil); err != nil {
@@ -143,8 +117,36 @@ func main() {
 	}
 }
 
-type Name struct {
-	Name string `json:"nickname"`
+func fetchemessages(w http.ResponseWriter, r *http.Request) {
+
+	cookie := CheckCookie(r)
+
+	if cookie == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	sender_id := getUserId(cookie.Value)
+	offset := r.URL.Query().Get("offset")
+
+	receiverNickname := r.URL.Query().Get("to")
+
+	receiver_id, err := queries.GetUserIdByNickname(db, receiverNickname)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err, Messages := queries.Getmessages(db, sender_id, receiver_id, offset)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(Messages)
 }
 
 type ClientList map[*Client]bool
@@ -153,12 +155,7 @@ type Client struct {
 	Connection *websocket.Conn
 	manager    *Manager
 	Client_id  int
-}
-
-type Message struct {
-	To      string `json:"to"`
-	Type    string `json:"type"`
-	Content string `json:"content"`
+	Nickname   string
 }
 
 func (c *Client) readmessages() {
@@ -173,43 +170,69 @@ func (c *Client) readmessages() {
 			}
 			break
 		}
-		var msg Message
+		var msg utils.Message
 
 		if err := json.Unmarshal(payload, &msg); err != nil {
 			fmt.Println(err)
 		}
-		query := "SELECT id FROM users WHERE nickname = ?"
 
+		var sender_nickname string
+		getNickName := "SELECT nickname FROM users WHERE id = ?"
+		if err := db.QueryRow(getNickName, c.Client_id).Scan(&sender_nickname); err != nil {
+			return
+		}
+
+		query := "SELECT id FROM users WHERE nickname = ?"
 		var receiver_id int
+
 		if err := db.QueryRow(query, msg.To).Scan(&receiver_id); err != nil {
 			return
 		}
+
 		fmt.Println(receiver_id)
 		fmt.Println("type", messagetype)
 		fmt.Println(msg)
 		fmt.Println(c.Client_id)
-		if !isOnlien(c, receiver_id) {
+		existes, receiver := isOnlien(c, receiver_id)
+		if !existes {
 			fmt.Println("receiver is offline", msg.To)
 			c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "failed", "message": "User is offline"}`))
 			continue
+		} else {
+			err := insertmsg(c.Client_id, receiver_id, msg.Content)
+			if err != nil {
+				fmt.Println(err)
+				c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "failed", "message": "internale server error"}`))
+			} else {
+				receiver.Connection.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(
+					`{"status": "success", "from": "%s", "content": "%s"}`, sender_nickname, msg.Content)))
+				c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "successe", "message": "Your message is delevered"}`))
+			}
 		}
 	}
 }
 
-func isOnlien(c *Client, receiver_id int) bool {
+func insertmsg(sender_id, receiver_id int, content string) error {
+	query := "INSERT INTO messages (sender_id, reciever_id, content, creation_date) VALUES (?,?,?, strftime('%s', 'now'))"
+	_, err := db.Exec(query, sender_id, receiver_id, content)
+	return err
+}
+
+func isOnlien(c *Client, receiver_id int) (bool, *Client) {
 	for client := range c.manager.clients {
 		if client.Client_id == receiver_id {
-			return true
+			return true, client
 		}
 	}
-	return false
+	return false, nil
 }
 
-func NewClient(conn *websocket.Conn, manager *Manager, user_id int) *Client {
+func NewClient(conn *websocket.Conn, manager *Manager, user_id int, nickname string) *Client {
 	return &Client{
 		Connection: conn,
 		manager:    manager,
 		Client_id:  user_id,
+		Nickname:   nickname,
 	}
 }
 
@@ -221,7 +244,7 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var names []Name
+	var names []utils.Name
 
 	user_id := getUserId(cooki.Value)
 	query := "SELECT nickname FROM users WHERE id <> ?"
@@ -232,7 +255,7 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for rows.Next() {
-		var name Name
+		var name utils.Name
 		if err := rows.Scan(&name.Name); err != nil {
 			fmt.Println("error acrosed while scanning nicknmae :", err)
 		}
@@ -240,11 +263,13 @@ func getUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	defer rows.Close()
-	json.NewEncoder(w).Encode(names)
-}
+	onlineusers := make(map[string]string)
+	_ = onlineusers
+	// client :=
+	// for c := range client.ClientList {
 
-type Category struct {
-	Name string `json:"name"`
+	// }
+	json.NewEncoder(w).Encode(names)
 }
 
 func handleReactions(w http.ResponseWriter, r *http.Request) {
@@ -280,8 +305,8 @@ func handleReactions(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(reaction)
 }
 
-func insertOrUpdateReaction(id int, target, token, action string) (Reactinos, error) {
-	var reaction Reactinos
+func insertOrUpdateReaction(id int, target, token, action string) (utils.Reactinos, error) {
+	var reaction utils.Reactinos
 
 	var userId int
 
@@ -343,10 +368,10 @@ func servercategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var categories []Category
+	var categories []utils.Category
 
 	for rows.Next() {
-		var category Category
+		var category utils.Category
 		if err := rows.Scan(&category.Name); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -377,22 +402,6 @@ func signout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	http.Redirect(w, r, "/signin", http.StatusOK)
-}
-
-type Posts struct {
-	Id         int       `json:"id"`
-	Title      string    `json:"title"`
-	Content    string    `json:"content"`
-	Poster     string    `json:"poster"`
-	CreatedAt  int       `json:"createdAt"`
-	Categories []string  `json:"categories"`
-	Reactions  Reactinos `json:"reactions"`
-}
-
-type Reactinos struct {
-	Likes    int    `json:"likes"`
-	Dislikes int    `json:"dislikes"`
-	Action   string `json:"action"`
 }
 
 func getName(w http.ResponseWriter, r *http.Request) {
@@ -431,7 +440,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 
 	offset := r.URL.Query().Get("offset")
 
-	var posts []Posts
+	var posts []utils.Posts
 	user_id := getUserId(cookie.Value)
 
 	query := `
@@ -464,7 +473,7 @@ func getPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for rows.Next() {
-		var post Posts
+		var post utils.Posts
 		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt, &post.Reactions.Likes, &post.Reactions.Dislikes, &post.Reactions.Action); err != nil {
 			fmt.Println(err)
 			return
@@ -489,7 +498,17 @@ func getUserId(token string) int {
 	return user_id
 }
 
-func getPostsCategories(posts []Posts) {
+func getUserNickname(id int) string {
+	var usernickname string
+	getUserId := "SELECT nickname FROM users WHERE id = ?"
+	if err := db.QueryRow(getUserId, id).Scan(&usernickname); err != nil {
+		fmt.Println("getting user err:", err)
+		return usernickname
+	}
+	return usernickname
+}
+
+func getPostsCategories(posts []utils.Posts) {
 	if len(posts) > 0 {
 		placeholders := strings.Repeat("?,", len(posts)-1) + "?"
 		getCategoriesQuery := `
@@ -601,10 +620,10 @@ func handlecategories(w http.ResponseWriter, r *http.Request) {
 
 	defer rows.Close()
 
-	var posts []Posts
+	var posts []utils.Posts
 
 	for rows.Next() {
-		var post Posts
+		var post utils.Posts
 		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt, &post.Reactions.Likes, &post.Reactions.Dislikes, &post.Reactions.Action); err != nil {
 			fmt.Println("Row scan error:", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -660,10 +679,10 @@ func profile(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("error while geting user %s profile\n", nickname)
 	}
 
-	var posts []Posts
+	var posts []utils.Posts
 
 	for rows.Next() {
-		var post Posts
+		var post utils.Posts
 		if err := rows.Scan(&post.Id, &post.Title, &post.Content, &post.Poster, &post.CreatedAt, &post.Reactions.Likes, &post.Reactions.Dislikes, &post.Reactions.Action); err != nil {
 			fmt.Println(err)
 			return
@@ -692,7 +711,7 @@ func addpost(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/signin", http.StatusUnauthorized)
 		return
 	}
-	var NewPost Posts
+	var NewPost utils.Posts
 
 	getUserId := `
    		SELECT u.nickname, s.user_id
@@ -720,7 +739,7 @@ func addpost(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(NewPost)
 }
 
-func insertPost(post Posts, user_id int) (string, int) {
+func insertPost(post utils.Posts, user_id int) (string, int) {
 	if post.Title == "" {
 		fmt.Println("title")
 		return "Titel can not be empty", 0
@@ -766,13 +785,7 @@ func insertPost(post Posts, user_id int) (string, int) {
 }
 
 func HomePage(w http.ResponseWriter, r *http.Request) {
-	// db.Exec("DELETE * FROM sessions")
 	ParseAndExecute(w)
-	// if r.URL.Path != "/" {
-	// 	w.Header().Set("Content-Type", "application/json")
-	// 	json.NewEncoder(w).Encode(map[string]string{"message": "Page Not Found"})
-	// 	return
-	// }
 }
 
 func ParseAndExecute(w http.ResponseWriter) {
@@ -792,12 +805,12 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == http.MethodGet {
-		ParseAndExecute(w)
-	}
+	// if r.Method == http.MethodGet {
+	// 	ParseAndExecute(w)
+	// }
 
 	if r.Method == http.MethodPost {
-		var req SignupRequest
+		var req utils.SignupRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			fmt.Println(err)
 		}
@@ -809,7 +822,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func insertUser(user SignupRequest) error {
+func insertUser(user utils.SignupRequest) error {
 	fmt.Println(user)
 	query := "INSERT INTO users (nickname, first_name, last_name, age, gender, email, password) VALUES (?,?,?,?,?,?,?)"
 	_, err := db.Exec(query, user.NickName, user.FirstName, user.LastName, user.Age, user.Gender, user.Email, user.Password)
