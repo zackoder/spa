@@ -63,7 +63,7 @@ func (m *Manager) addClient(client *Client) {
 	m.clients[client] = true
 	for c := range m.clients {
 		if c != client {
-			c.Connection.WriteJSON(map[string]string{"new connectio": c.Nickname})
+			c.Connection.WriteJSON(map[string]string{"new connection": c.Nickname})
 		}
 	}
 }
