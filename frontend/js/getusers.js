@@ -160,7 +160,6 @@ function fetchMsg(form, to, errEl, body) {
         );
         messageEl.classList.add("sent");
         body.prepend(messageEl);
-        console.log(body);
 
         messagesOffset++;
         inpt.value = "";

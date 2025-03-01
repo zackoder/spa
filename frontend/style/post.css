@@ -162,7 +162,8 @@
 
 .stat {
   font-size: 0.75rem;
-  color: gray;
+  color: rgb(49, 49, 49);
+  font-weight: 600;
 }
 
 .notification {
