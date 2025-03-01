@@ -32,11 +32,12 @@ export const socketEvents = () => {
         senderchatbox.children[1].prepend(newMessage);
         scrolldown(parent, newMessage);
       }
+      const users = document.querySelector(".usersContainer");
       document.querySelectorAll(`.user`).forEach((user) => {
-
         if (user.children[0].textContent === data.from) {
           const notificationEl = createHTMLel("span", "notification");
           console.log("hello");
+          users.prepend(user);
           user.append(notificationEl);
         }
       });

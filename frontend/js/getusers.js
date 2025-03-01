@@ -210,14 +210,12 @@ async function sendMessage(receiver, content) {
         }
       }
 
-      const notifacation = document
-        .querySelectorAll(`.user`)
-        .forEach((user) => {
-          if (user.textContent === data.from) {
-            const notificationEl = createHTMLel("span", "notification");
-            user.append(notificationEl);
-          }
-        });
+      document.querySelectorAll(`.user`).forEach((user) => {
+        if (user.textContent === data.from) {
+          const notificationEl = createHTMLel("span", "notification");
+          user.append(notificationEl);
+        }
+      });
 
       res(data);
     };
