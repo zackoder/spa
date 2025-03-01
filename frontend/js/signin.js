@@ -257,7 +257,6 @@ export const signup = async () => {
 
       let res = fetchData("/sign-up", data);
       res.then((resp) => {
-        console.log(resp);
         if (resp.redirected) {
           document.head.removeChild(title);
           document.head.removeChild(styleLink);

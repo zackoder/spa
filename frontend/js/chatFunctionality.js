@@ -18,15 +18,11 @@ export const socketEvents = () => {
 
     const senderchatbox = document.querySelector("#" + data.from);
 
-    console.log("sender element", senderchatbox);
-
     let newMessage;
 
     if (senderchatbox && !senderchatbox.classList.contains("showen")) {
-      console.log("it is hiden");
 
       if (senderchatbox.children[1].children.length !== 0) {
-        console.log("it has cheldren");
         newMessage = createmsgcontaine(data, data.from);
         newMessage.classList.add("get");
         senderchatbox.children[1].prepend(newMessage);
@@ -36,7 +32,6 @@ export const socketEvents = () => {
       document.querySelectorAll(`.user`).forEach((user) => {
         if (user.children[0].textContent === data.from) {
           const notificationEl = createHTMLel("span", "notification");
-          console.log("hello");
           users.prepend(user);
           user.append(notificationEl);
         }

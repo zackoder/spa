@@ -120,8 +120,6 @@ function cratepopUpForUser(nickname) {
 async function handelmessagesscroll(nickname) {
   const element = document.querySelector(`#${nickname} .body`);
   const elrect = element.getBoundingClientRect();
-  console.log(Math.abs(element.scrollTop));
-  console.log(element.scrollHeight - (elrect.height + 100));
 
   const data = await getmessages(nickname);
   if (
@@ -133,7 +131,6 @@ async function handelmessagesscroll(nickname) {
         creatmessage(msg, element, nickname, "prepend");
       });
     }
-    console.log(data);
   }
 }
 
@@ -183,39 +180,38 @@ async function sendMessage(receiver, content) {
     socket.send(JSON.stringify({ to: receiver, content: content }));
     socket.onmessage = (e) => {
       data = JSON.parse(e.data);
+      if (data.from) {
+        const senderchatbox = document.querySelector("#" + data.from);
 
-      const senderchatbox = document.querySelector("#" + data.from);
-      const curentchat = document.querySelector(".showen");
+        if (
+          senderchatbox !== null &&
+          senderchatbox.classList.contains(".showen")
+        ) {
 
-      if (curentchat && curentchat === senderchatbox) {
-        console.log("curentchat is the same!!! ");
-
-        const newMessage = createmsgcontaine(data, data.from);
-        newMessage.classList.add("get");
-        senderchatbox.children[1].prepend(newMessage);
-        setTimeout(() => {
-          parent.scrollTop = parent.scrollHeight + newMessage.offsetHeight + 10;
-        }, 10);
-        return;
-      }
-
-      if (senderchatbox && !senderchatbox.classList.contains(".showen")) {
-        console.log("it is hiden");
-
-        if (senderchatbox.children[1].children.length !== 0) {
-          console.log("it has cheldren");
           const newMessage = createmsgcontaine(data, data.from);
           newMessage.classList.add("get");
           senderchatbox.children[1].prepend(newMessage);
-        }
-      }
+          setTimeout(() => {
+            parent.scrollTop =
+              parent.scrollHeight + newMessage.offsetHeight + 10;
+          }, 10);
+          return;
+        } else {
 
-      document.querySelectorAll(`.user`).forEach((user) => {
-        if (user.textContent === data.from) {
-          const notificationEl = createHTMLel("span", "notification");
-          user.append(notificationEl);
+          if (senderchatbox.children[1].children.length !== 0) {
+            const newMessage = createmsgcontaine(data, data.from);
+            newMessage.classList.add("get");
+            senderchatbox.children[1].prepend(newMessage);
+          }
         }
-      });
+
+        document.querySelectorAll(`.user`).forEach((user) => {
+          if (user.children[0].textContent === data.from) {
+            const notificationEl = createHTMLel("span", "notification");
+            user.append(notificationEl);
+          }
+        });
+      }
 
       res(data);
     };
