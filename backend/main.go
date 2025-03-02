@@ -193,9 +193,8 @@ func (c *Client) readmessages() {
 		fmt.Println("type", messagetype)
 		fmt.Println(msg)
 		fmt.Println(c.Client_id)
-		existes, receiver := isOnlien(c, receiver_id)
+		existes := isOnlien(c, receiver_id)
 		if !existes {
-			fmt.Println("receiver is offline", msg.To)
 			c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "failed", "message": "User is offline"}`))
 			continue
 		} else {
@@ -204,9 +203,13 @@ func (c *Client) readmessages() {
 				fmt.Println(err)
 				c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "failed", "message": "internale server error"}`))
 			} else {
-				receiver.Connection.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(
-					`{"status": "success", "from": "%s", "content": "%s"}`, sender_nickname, msg.Content)))
-				c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "successe", "message": "Your message is delevered"}`))
+				for reciever := range c.manager.clients {
+					if reciever.Client_id == receiver_id {
+						reciever.Connection.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(
+							`{"status": "success", "from": "%s", "content": "%s"}`, sender_nickname, msg.Content)))
+						c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "successe", "message": "Your message is delevered"}`))
+					}
+				}
 			}
 		}
 	}
@@ -218,13 +221,13 @@ func insertmsg(sender_id, receiver_id int, content string) error {
 	return err
 }
 
-func isOnlien(c *Client, receiver_id int) (bool, *Client) {
+func isOnlien(c *Client, receiver_id int) bool {
 	for client := range c.manager.clients {
 		if client.Client_id == receiver_id {
-			return true, client
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
 
 func NewClient(conn *websocket.Conn, manager *Manager, user_id int, nickname string) *Client {
