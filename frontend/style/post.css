@@ -124,11 +124,12 @@
   max-width: 300px;
   position: fixed;
   top: 150px;
-  height: 100vh;
+  height: 80vh;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
   transition: all 0.7s ease;
+  overflow-y: auto;
 }
 
 .up {

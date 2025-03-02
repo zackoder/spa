@@ -76,6 +76,7 @@ export const signin = async () => {
         if (res.ok) {
           document.head.removeChild(styleLink);
           document.head.removeChild(title);
+          root.innerHTML = "";
           navigateTo("/");
         }
       });

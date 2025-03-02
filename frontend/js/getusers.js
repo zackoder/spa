@@ -7,10 +7,7 @@ export const getuser = async (sidebar) => {
   let res = await fetch("/getusers");
   let nickNames = await res.json();
   nickNames.forEach((nickName) => {
-    const user = createHTMLel("div", "user");
-    const nickname = createHTMLel("span", "nickname", nickName.nickname);
-    const stat = createHTMLel("span", "stat", "offline");
-    user.append(nickname, stat);
+    const user = createUsrContainer(nickName);
     const userpopup = addeventToUser(user, nickName.nickname);
     usersContainer.append(user);
     sidebar.append(userpopup);
@@ -18,9 +15,18 @@ export const getuser = async (sidebar) => {
   sidebar.append(usersContainer);
 };
 
+export function createUsrContainer(nickName, status) {
+  const user = createHTMLel("div", "user");
+  const nickname = createHTMLel("span", "nickname", nickName.nickname);
+  const stat = createHTMLel("span", "stat");
+  if (status) stat.textContent = status;
+  user.append(nickname, stat);
+  return user;
+}
+
 let messagesOffset = 0;
 
-function addeventToUser(user, nickname) {
+export function addeventToUser(user, nickname) {
   const div = cratepopUpForUser(nickname);
   user.addEventListener("click", async () => {
     let chatshone = document.querySelector("div.showen");
@@ -122,15 +128,21 @@ async function handelmessagesscroll(nickname) {
   const elrect = element.getBoundingClientRect();
 
   const data = await getmessages(nickname);
+  console.log("scroll: ",element.scrollTop);
+  if (data === undefined) return;
   if (
     Math.abs(element.scrollTop) >=
     element.scrollHeight - (elrect.height + 100)
   ) {
-    if (data.length > 0) {
-      data.forEach((msg) => {
-        creatmessage(msg, element, nickname, "prepend");
-      });
-    }
+    data.forEach((msg) => {
+      creatmessage(msg, element, nickname, "prepend");
+      let i = 0;
+      setInterval(() => {
+        if (i === data.length) return;
+        i++;
+        element.scrollTop += 60;
+      }, 100);
+    });
   }
 }
 
@@ -185,9 +197,8 @@ async function sendMessage(receiver, content) {
 
         if (
           senderchatbox !== null &&
-          senderchatbox.classList.contains(".showen")
+          senderchatbox.classList.contains("showen")
         ) {
-
           const newMessage = createmsgcontaine(data, data.from);
           newMessage.classList.add("get");
           senderchatbox.children[1].prepend(newMessage);
@@ -197,20 +208,21 @@ async function sendMessage(receiver, content) {
           }, 10);
           return;
         } else {
-
           if (senderchatbox.children[1].children.length !== 0) {
             const newMessage = createmsgcontaine(data, data.from);
             newMessage.classList.add("get");
             senderchatbox.children[1].prepend(newMessage);
           }
-        }
 
-        document.querySelectorAll(`.user`).forEach((user) => {
-          if (user.children[0].textContent === data.from) {
-            const notificationEl = createHTMLel("span", "notification");
-            user.append(notificationEl);
-          }
-        });
+          document.querySelectorAll(`.user`).forEach((user) => {
+            if (user.children[0].textContent === data.from) {
+              const notificationEl = createHTMLel("span", "notification");
+              console.log("hello");
+
+              user.append(notificationEl);
+            }
+          });
+        }
       }
 
       res(data);

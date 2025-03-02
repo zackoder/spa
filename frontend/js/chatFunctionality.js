@@ -1,10 +1,16 @@
-import { createmsgcontaine } from "./getusers.js";
+import {
+  addeventToUser,
+  createmsgcontaine,
+  createUsrContainer,
+} from "./getusers.js";
 import { createHTMLel } from "./helpers.js";
 import { user } from "./navbar.js";
 
 export let socket = null;
 
 export const socketEvents = () => {
+  // socket.send(JSON.stringify({ to: receiver, content: content }));
+
   socket.onopen = (e) => {
     console.log("the client is connected to the server");
   };
@@ -21,7 +27,6 @@ export const socketEvents = () => {
     let newMessage;
 
     if (senderchatbox && !senderchatbox.classList.contains("showen")) {
-
       if (senderchatbox.children[1].children.length !== 0) {
         newMessage = createmsgcontaine(data, data.from);
         newMessage.classList.add("get");
@@ -45,10 +50,6 @@ export const socketEvents = () => {
       scrolldown(parent, newMessage);
     }
   };
-
-  socket.addEventListener("open", () => {
-    console.log("connected..");
-  });
 };
 
 function scrolldown(parent, newMessage) {
@@ -65,14 +66,22 @@ export function upgradeconnection() {
 function handleconnection(data) {
   let users = document.querySelectorAll(".user");
   if (data.user === "online") {
-    users.forEach((user) => {
-      if (user.children[0].textContent === data.nickname)
-        user.children[1].textContent = "online";
-    });
+    const getUser = document.querySelector(`#${data.nickname}`);
+    if (data.nickname !== user && !getUser) {
+      const newUser = createUsrContainer(data, "online");
+      const userpopu = addeventToUser(newUser, data.nickname);
+      document.querySelector(".left-sidebar").append(userpopu);
+      document.querySelector(".usersContainer").append(newUser);
+    }
+    changeUserstat(users, "online", data.nickname);
   } else if (data.user === "offline") {
-    users.forEach((user) => {
-      if (user.children[0].textContent === data.nickname)
-        user.children[1].textContent = "offline";
-    });
+    changeUserstat(users, "", data.nickname);
   }
+}
+
+function changeUserstat(users, stat, nickname) {
+  users.forEach((user) => {
+    if (user.children[0].textContent === nickname)
+      user.children[1].textContent = stat;
+  });
 }
