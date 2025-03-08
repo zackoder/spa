@@ -302,12 +302,15 @@ export const signup = async () => {
 export const signout = async () => {
   try {
     let res = await fetch("/signout");
-    console.log(res);
+    console.log("res: ", res);
 
     if (res.ok) {
-      location.href = "/signin";
+      root.innerHTML = "";
+      navigateTo("/signin");
     }
   } catch (err) {
+    console.log(err);
+
     alert("an error acursed while signing out");
   }
 };

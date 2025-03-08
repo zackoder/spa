@@ -21,9 +21,11 @@ export const createHTMLel = (
 export const layout = createHTMLel("div");
 layout.addEventListener("click", () => {
   const post = document.querySelector(".show");
+  const comments = document.querySelector(".showcomment");
+  if (comments) root.removeChild(comments);
   document.body.style.overflow = "";
   layout.classList.toggle("layout");
-  post.classList.toggle("show");
+  if (post) post.classList.toggle("show");
 });
 
 root.append(layout);
@@ -218,10 +220,17 @@ export function setupSPA() {
     }
   });
 
-  window.addEventListener("popstate", () => handleRoute(location.pathname));
-
   handleRoute(location.pathname);
 }
+window.addEventListener("popstate", () => {
+  offset = 0;
+  nomorPosts = false;
+  let path = location.pathname;
+  const postsContainer = document.querySelector(".postscontainer");
+  if (postsContainer) postsContainer.innerHTML = "";
+  if (path === "/signin" || path === "/signup") root.innerHTML = "";
+  handleRoute(location.pathname);
+});
 
 const showPosts = async (path) => {
   if (nomorPosts) return;
@@ -272,7 +281,8 @@ const creatPosts = (container, data, position) => {
     const content = createHTMLel("p", "Postcontent", postData.content);
     const like_dislike_containerP = createHTMLel("div", "likeAndDislikeP");
     handleReaction(like_dislike_containerP, "post", postData);
-
+    const commentsbtn = createHTMLel("button", "commentbtn", "🗨️");
+    commentsbtn.addEventListener("click", getcomments);
     const postcategories = createcategories(postData.categories);
 
     postcontainer.append(
@@ -281,12 +291,35 @@ const creatPosts = (container, data, position) => {
       title,
       content,
       postcategories,
-      like_dislike_containerP
+      like_dislike_containerP,
+      commentsbtn
     );
     if (position === "append") container.append(postcontainer);
     if (position === "prepend") container.prepend(postcontainer);
   });
 };
+
+function getcomments() {
+  layout.classList.toggle("layout");
+  const comments = createHTMLel("div", "comments showcomment");
+  const commentscontainer = createHTMLel("div", "comments_container");
+  const form = createHTMLel("form", "commentsForm");
+  const ipt = createHTMLel("input", "commentInput", "", {
+    key: "placeholder",
+    value: "haid hiya 3lik rd 3lih",
+  });
+  comments.append(commentscontainer, form);
+  const submitbtn = createHTMLel("button", "submitComment", "submit");
+  form.append(ipt, submitbtn);
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    fetchComment(form[0].value);
+  });
+
+  root.appendChild(comments);
+}
+
+function fetchComment(comment) {}
 
 function createcategories(categories) {
   const postcategories = createHTMLel("div", "postcategories");

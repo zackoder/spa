@@ -107,6 +107,7 @@ func main() {
 	http.HandleFunc("/signout", signout)
 	http.HandleFunc("/addpost", addpost)
 	http.HandleFunc("/posts", getPosts)
+	http.HandleFunc("/comments", getComments)
 	http.HandleFunc("/api/category/{categoryName}", handlecategories)
 	http.HandleFunc("/api/{nickname}", profile)
 	http.HandleFunc("/get_categories", servercategories)
@@ -117,6 +118,10 @@ func main() {
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func getComments(w http.ResponseWriter, r *http.Request) {
+	
 }
 
 func fetchemessages(w http.ResponseWriter, r *http.Request) {
@@ -400,8 +405,7 @@ func signout(w http.ResponseWriter, r *http.Request) {
 	cookie := CheckCookie(r)
 
 	if cookie == nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		// http.Redirect(w, r, "/signin", http.StatusUnauthorized)
+		http.Redirect(w, r, "/signin", 303)
 		return
 	}
 
@@ -415,7 +419,7 @@ func signout(w http.ResponseWriter, r *http.Request) {
 		MaxAge: -1,
 	})
 
-	http.Redirect(w, r, "/signin", http.StatusOK)
+	http.Redirect(w, r, "/signin", http.StatusSeeOther)
 }
 
 func getName(w http.ResponseWriter, r *http.Request) {

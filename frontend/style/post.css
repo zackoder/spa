@@ -294,3 +294,10 @@
   background-color: rgba(0, 0, 0, 0.329);
   box-shadow: 0 2px 3px 5px rgba(48, 48, 48, 0.582);
 }
+.comments {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
