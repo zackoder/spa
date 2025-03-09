@@ -1,5 +1,6 @@
 import { createHTMLel, fetchData, navigateTo } from "./helpers.js";
 import { originalHTML } from "./index.js";
+import Validation from "./validation.js";
 
 const root = document.querySelector(".root");
 
@@ -102,143 +103,115 @@ export const signin = async () => {
   }
 };
 
+// Registration function
 export const signup = async () => {
   let res = await fetch("/getNickName");
   if (res.ok) navigateTo("/");
   else {
     let styleLink = createHTMLel("link", "log", "", {
       key: "href",
-      value: "/frontend/style/log.css",
+      value: "/frontend/style/register.css",
     });
     styleLink.rel = "stylesheet";
     let title = createHTMLel("title", "", "Sign Up");
     document.head.append(styleLink, title);
 
-    /* form container */
-    let formcontainer = createHTMLel("div", "formcontainer");
 
-    /* form */
-    let form = createHTMLel("form", "logform", "", {
-      key: "method",
-      value: "POST",
+
+    const container = createHTMLel("div", "container");
+    const form = createHTMLel("form", "", "", { key: "id", value: "registerForm" });
+    form.setAttribute("method", "POST");
+    form.setAttribute("autocomplete", "off");
+
+    const form_title = createHTMLel("h3", "title", "Create Account");
+    form.appendChild(form_title);
+
+    const nicknameBox = createHTMLel("div", "nickname box");
+    const nicknameDiv = createHTMLel("div", "", "", { key: "style", value: "width:100%" });
+    const nicknameInput = createHTMLel("input", "", "", { key: "type", value: "text" });
+    nicknameInput.setAttribute("name", "nickname");
+    nicknameInput.setAttribute("id", "nickname");
+    nicknameInput.setAttribute("placeholder", "Nickname");
+    const errNickname = createHTMLel("span", "", "tst errorr", { key: "id", value: "errnickname" });
+    nicknameDiv.append(nicknameInput, errNickname);
+    nicknameBox.appendChild(nicknameDiv);
+    form.appendChild(nicknameBox);
+
+    const nameBox = createHTMLel("div", "name box grid");
+    ["firstname", "lastname"].forEach((field) => {
+      const div = createHTMLel("div");
+      const input = createHTMLel("input", "", "", { key: "type", value: "text" });
+      input.setAttribute("name", field);
+      input.setAttribute("id", field);
+      input.setAttribute("placeholder", field.split("n").join("N "));
+      const errSpan = createHTMLel("span", "", "tst errorr", { key: "id", value: `err${field}` });
+      div.append(input, errSpan);
+      nameBox.appendChild(div);
     });
+    form.appendChild(nameBox);
 
-    /* Sing Up header */
-    let h1 = createHTMLel("h1", "logheader", "Sing Up");
-
-    /* nickname label and  input */
-    let nicknameLbl = createHTMLel("label", "lbl", "NickName: ", {
-      key: "for",
-      value: "nicknameInpt",
+    const ageGenderBox = createHTMLel("div", "age-gender box grid");
+    const genderDiv = createHTMLel("div");
+    const genderSelect = createHTMLel("select", "", "", { key: "name", value: "gender" });
+    genderSelect.setAttribute("id", "gender");
+    ["", "male", "female"].forEach((opt) => {
+      const option = createHTMLel("option", "", opt ? opt.charAt(0).toUpperCase() + opt.slice(1) : "Select Your Gender", { key: "value", value: opt });
+      genderSelect.appendChild(option);
     });
-    let nicknameInpt = createHTMLel("input", "inpt", "", {
-      key: "id",
-      value: "nicknameInpt",
+    const errGender = createHTMLel("span", "", "tst errorr", { key: "id", value: "errgender" });
+    genderDiv.append(genderSelect, errGender);
+    ageGenderBox.appendChild(genderDiv);
+
+    const birthDiv = createHTMLel("div");
+    const birthInput = createHTMLel("input", "", "", { key: "type", value: "date" });
+    birthInput.setAttribute("name", "birthdate");
+    birthInput.setAttribute("id", "birthdate");
+    birthInput.setAttribute("title", "Date of Birth");
+    const errBirth = createHTMLel("span", "", "tst errorr", { key: "id", value: "errbirthdate" });
+    birthDiv.append(birthInput, errBirth);
+    ageGenderBox.appendChild(birthDiv);
+
+    form.appendChild(ageGenderBox);
+
+    const emailBox = createHTMLel("div", "email box");
+    const emailDiv = createHTMLel("div", "", "", { key: "style", value: "width:100%" });
+    const emailInput = createHTMLel("input", "", "", { key: "type", value: "email" });
+    emailInput.setAttribute("name", "email");
+    emailInput.setAttribute("id", "email");
+    emailInput.setAttribute("placeholder", "Email");
+    const errEmail = createHTMLel("span", "", "tst errorr", { key: "id", value: "erremail" });
+    emailDiv.append(emailInput, errEmail);
+    emailBox.appendChild(emailDiv);
+    form.appendChild(emailBox);
+
+    const passwordBox = createHTMLel("div", "password box grid");
+    ["password", "confirmpassword"].forEach((field) => {
+      const div = createHTMLel("div", "", "", { key: "style", value: "display:block;" });
+      const input = createHTMLel("input", "", "", { key: "type", value: "password" });
+      input.setAttribute("name", field);
+      input.setAttribute("id", field);
+      input.setAttribute("placeholder", field === "password" ? "Password" : "Confirm Password");
+      const errSpan = createHTMLel("span", "", "tst errorr", { key: "id", value: `err${field}` });
+      div.append(input, errSpan);
+      passwordBox.appendChild(div);
     });
+    form.appendChild(passwordBox);
 
-    /* first name label and input */
-    let firstNamelbl = createHTMLel("label", "lbl", "First Name:", {
-      key: "for",
-      value: "firstNameinpt",
-    });
+    const submitBox = createHTMLel("div", "box");
+    const submitBtn = createHTMLel("input", "", "", { key: "type", value: "submit" });
+    submitBtn.setAttribute("value", "Register");
+    submitBtn.setAttribute("id", "submit");
+    submitBox.appendChild(submitBtn);
+    form.appendChild(submitBox);
 
-    let firstNameinpt = createHTMLel("input", "inpt", "", {
-      key: "id",
-      value: "firstNameinpt",
-    });
+    const loginText = createHTMLel("h4", "", "Already have an account? ");
+    const loginLink = createHTMLel("a", "", "Login", { key: "href", value: "/login" });
+    loginText.appendChild(loginLink);
+    form.appendChild(loginText);
 
-    /* last name label and input */
-    let lastNamelbl = createHTMLel("label", "lbl", "Last Name:", {
-      key: "for",
-      value: "lastNameinpt",
-    });
+    container.appendChild(form);
+    root.appendChild(container);
 
-    let lastNameinpt = createHTMLel("input", "inpt", "", {
-      key: "id",
-      value: "lastNameinpt",
-    });
-
-    /* age label and input */
-    let agelbl = createHTMLel("label", "lbl", "Age: ", {
-      key: "for",
-      value: "ageinpt",
-    });
-
-    let ageinpt = createHTMLel("input", "inpt", "", {
-      key: "id",
-      value: "ageinpt",
-    });
-    ageinpt.type = "date";
-
-    let malelbl = createHTMLel("label", "lbl", "Male", {
-      key: "for",
-      value: "male",
-    });
-
-    let maleipt = createHTMLel("input", "redioinpt", "", {
-      key: "name",
-      value: "gender",
-    });
-
-    maleipt.type = "radio";
-    maleipt.id = "male";
-
-    let femalelbl = createHTMLel("label", "lbl", "Female", {
-      key: "for",
-      value: "female",
-    });
-    let femaleipt = createHTMLel("input", "redioinpt", "", {
-      key: "name",
-      value: "gender",
-    });
-
-    femaleipt.type = "radio";
-    femaleipt.id = "female";
-
-    let Emaillbl = createHTMLel(
-      "label",
-      "lbl",
-      "Enter Your Email or Nickname:",
-      {
-        key: "for",
-        value: "emailnpt",
-      }
-    );
-
-    let Emailinpt = createHTMLel("input", "inpt", "", {
-      key: "id",
-      value: "emailnpt",
-    });
-
-    // Emailinpt.id = "emailnpt";
-
-    /* label and input for password */
-    let passwordlbl = createHTMLel("label", "lbl", "password :", {
-      key: "for",
-      value: "passwordnpt",
-    });
-
-    let passwordinpt = createHTMLel("input", "inpt", "", {
-      key: "name",
-      value: "password",
-    });
-    passwordinpt.id = "passwordnpt";
-    passwordinpt.type = "password";
-
-    /* conferm password */
-    let cpasswordlbl = createHTMLel("label", "lbl", "conferm password :", {
-      key: "for",
-      value: "cpasswordnpt",
-    });
-
-    let cpasswordinpt = createHTMLel("input", "inpt", "", {
-      key: "name",
-      value: "password",
-    });
-    passwordinpt.id = "cpasswordnpt";
-    passwordinpt.type = "password";
-
-    let submitbtn = createHTMLel("button", "submit", "submit");
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -254,12 +227,24 @@ export const signup = async () => {
         age: ageinpt.value,
         email: email,
         password: password,
+        confirmPassword: cpasswordinpt.value.trim(),
       };
+
+      // Validate nickname
+
+      if (!Validation.validateNickname(data.nickName.value.trim())) { return; }
+      if (!Validation.validateFirstname(data.firstName.value.trim())) { return; }
+      if (!Validation.validateLastname(data.lastName.value.trim())) { return; }
+      if (!Validation.validateGender(data.gender)) { return; }
+      if (!Validation.validateAge(data.age.value.trim())) { return; }
+      if (!Validation.validateEmail(data.email)) { return; }
+      if (!Validation.validatePassword(data.password)) { return; }
+      if (!Validation.validateConfirmPassword(data.confirmPassword)) { return; }
 
       let res = fetchData("/sign-up", data);
       res.then((resp) => {
         if (resp.redirected) {
-          document.head.removeChild(title);
+          document.head.removeChild(form_title);
           document.head.removeChild(styleLink);
           navigateTo("/");
         }
@@ -271,31 +256,31 @@ export const signup = async () => {
       value: "/signin",
     });
     signin.appendChild(signinLink);
-    form.append(
-      h1,
-      nicknameLbl,
-      nicknameInpt,
-      firstNamelbl,
-      firstNameinpt,
-      lastNamelbl,
-      lastNameinpt,
-      agelbl,
-      ageinpt,
-      malelbl,
-      maleipt,
-      femalelbl,
-      femaleipt,
-      Emaillbl,
-      Emailinpt,
-      passwordlbl,
-      passwordinpt,
-      cpasswordlbl,
-      cpasswordinpt,
-      signin,
-      submitbtn
-    );
-    formcontainer.appendChild(form);
-    root.appendChild(formcontainer);
+    //   form.append(
+    //     h1,
+    //     nicknameLbl,
+    //     nicknameInpt,
+    //     firstNamelbl,
+    //     firstNameinpt,
+    //     lastNamelbl,
+    //     lastNameinpt,
+    //     agelbl,
+    //     ageinpt,
+    //     malelbl,
+    //     maleipt,
+    //     femalelbl,
+    //     femaleipt,
+    //     Emaillbl,
+    //     Emailinpt,
+    //     passwordlbl,
+    //     passwordinpt,
+    //     cpasswordlbl,
+    //     cpasswordinpt,
+    //     signin,
+    //     submitbtn
+    //   );
+    //   formcontainer.appendChild(form);
+    //   root.appendChild(formcontainer);
   }
 };
 

@@ -1,0 +1,206 @@
+*{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* // <uniquifier>: Use a unique and descriptive class name
+// <weight>: Use a value from 100 to 900
+
+.roboto-<uniquifier> {
+  font-family: "Roboto", serif;
+  font-optical-sizing: auto;
+  font-weight: <weight>;
+  font-style: normal;
+  font-variation-settings:
+    "wdth" 100;
+} */
+
+body{
+    background-image: url(../images/bg-login.jpg);
+    background-size: cover;    
+    height: 100vh;
+    font-family: "Roboto", serif;
+}
+#app {
+    height: 100vh;
+}
+.container{
+    /* width: 30%; */
+    width: 500px;
+    max-width: 90%;
+    position: relative;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    
+}
+
+.container form{
+    min-height: 400px;
+    width: 100%;
+    /* display: flex;
+    flex-direction: column;
+    gap: 20px; */
+}
+.container form h3.title{
+    text-transform: capitalize;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    width: 80%;
+    margin-left: 10%;
+    font-size: 2em;
+    font-style: normal;
+    font-weight: bold;
+    padding: 10px 15px;
+    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-top-right-radius: 0;
+    border-top-left-radius: 0px;
+}
+
+.container form div.box{
+    width: 90%;
+    margin-top: 10px;
+    margin-left: 5%;
+    margin-right: 5%;
+    display: flex;
+    justify-content: space-between;
+}
+.container form div.box div,
+.container form div.box div input,
+.container form div.box div select{
+    width: 100%;
+}
+.container form div.box div select{
+    background: #422a5a;
+}
+
+.grid {
+    display: grid;
+    grid-template-rows: repeat(2);
+    gap: 10px;
+}
+.container form div.box span{
+    font-weight: normal;
+    font-size: 12px;
+    color: rgb(250, 27, 27);
+    margin-left: 5px;
+    display: none;
+}
+/* .nickname input{
+    width: 100% !important;
+    display: block !important;
+} */
+
+.container form input[type="text"],
+.container form input[type="email"],
+.container form input[type="password"],
+.container form input[type="date"],
+.container form select,
+.container form .uploadphoto button{
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 1em;
+    margin-top: 5px;
+}
+
+.container form div.password input,
+.container form div.name input,
+.container form div.age-gender select,
+.container form div.age-gender input{
+    width: 48%;
+}
+
+.container form div.email input,
+.container form div.nickname input{
+    width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.container form .uploadphoto input[type="text"]{
+    width: 90%;
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.container form .uploadphoto button{
+    width: 20%;
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    cursor: pointer;
+}
+
+.container form div label{
+    margin-left: 5px;
+    font-size: 20px;
+    text-transform: capitalize;
+    font-weight: bold;
+}
+input[type="submit"]{
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background 0.3s ease;
+}
+input[type="submit"]:hover{
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.showError{
+    color: #f00;
+    font-size: 22px;
+    /* display: block; */
+    text-align: center;
+    width: 100%;
+    display: block;
+}
+  
+
+.container form h4{
+    color: white;
+    text-align: center;
+    font-size: 0.9em;
+    font-weight: normal;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.container form h4 a {
+    color: #4ecdc4;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.container form h4 a:hover {
+    text-decoration: underline;
+}
+::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}

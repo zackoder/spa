@@ -9,12 +9,12 @@ export const createHTMLel = (
   name,
   Class,
   content = "",
-  atrebute = { key: "", value: "" }
+  attribute = { key: "", value: "" }
 ) => {
   let element = document.createElement(name);
   if (content == 0 || content) element.textContent = content;
   if (Class) element.className = Class;
-  if (atrebute.key) element.setAttribute(atrebute.key, atrebute.value);
+  if (attribute.key) element.setAttribute(attribute.key, attribute.value);
   return element;
 };
 

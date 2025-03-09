@@ -1,9 +1,4 @@
-* {
-  padding: 0;
-  margin: 0;
-  background-color: rgb(165, 165, 165);
-}
-
+/* 
 .formcontainer {
   border: black solid 1px;
   position: absolute;
@@ -23,4 +18,181 @@
   flex-direction: column;
   height: auto;
   padding: 20px 0 40px 0;
+} */
+
+
+/* Start Sign In Login*/
+*{
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
+
+/* // <uniquifier>: Use a unique and descriptive class name
+// <weight>: Use a value from 100 to 900
+
+.roboto-<uniquifier> {
+font-family: "Roboto", serif;
+font-optical-sizing: auto;
+font-weight: <weight>;
+font-style: normal;
+font-variation-settings:
+  "wdth" 100;
+} */
+
+body{  
+  /* height: 100vh; */
+}
+
+#root {
+  background-image: url(../images/bg-login.jpg);
+  background-size: cover;    
+  height: 100vh;
+  font-family: "Roboto", serif;
+}
+
+.formcontainer{
+  /* width: 30%; */
+  width: 500px;
+  max-width: 90%;
+  position: relative;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  
+}
+
+.formcontainer .logform{
+  min-height: 400px;
+  width: 100%;
+  /* display: flex;
+  flex-direction: column;
+  gap: 20px; */
+}
+.formcontainer .logform h1{
+  text-transform: capitalize;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.2);
+  width: 30%;
+  margin-left: 35%;
+  font-size: 2em;
+  font-style: normal;
+  font-weight: bold;
+  padding: 10px 15px;
+  border-bottom-right-radius: 20px;
+  border-bottom-left-radius: 20px;
+  border-top-right-radius: 0;
+  border-top-left-radius: 0px;
+  margin-bottom: 50px;
+}
+
+/* .formcontainer .logform div{
+  width: 90%;
+  margin-top: 30px;
+  margin-left: 5%;
+  margin-right: 5%;
+} */
+/* .formcontainer .logform div.password div{
+  display: flex;
+  width: 100%;
+  margin: 0;
+} */
+/* .formcontainer .logform input[type="text"],
+.formcontainer .logform input[type="password"],
+.formcontainer .logform input[type="password"] + button,
+.formcontainer .logform input[type="text"] + button.showpassword, */
+
+.formcontainer .logform .lbl{
+  margin-left: 10%;
+}
+
+.formcontainer .logform .inpt{
+  width: 80%;
+  margin-left: 10%;
+  margin-right: 10%;
+  margin-bottom: 20px;
+  outline: none;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 1em;
+  margin-top: 5px;
+}
+
+
+/* .formcontainer .logform input[type="password"],
+.formcontainer .logform input[type="text"].password{
+  width: 90%;
+  border-right: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+} */
+.formcontainer .logform input[type="password"] + button.showpassword,
+.formcontainer .logform input[type="text"] + button.showpassword{
+  width: 20%;
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  cursor: pointer;
+}
+
+.formcontainer .logform .inpt:focus,
+.formcontainer .logform .inpt:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.formcontainer .logform .signuplikn{
+  color: white;
+  /* text-align: center; */
+  font-size: 1.1em;
+  font-weight: normal;
+  margin-left: 10%;
+  text-transform: capitalize;
+ 
+}
+
+
+.formcontainer .logform .signuplikn a {
+  color: #4ecdc4;
+  cursor: pointer;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.formcontainer .logform .signuplikn a:hover {
+  text-decoration: underline;
+}
+
+.logform button.submit{
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  width: 80%;
+  margin-left: 10%;
+  margin-right: 10%;
+  margin-top: 20px;
+  margin-bottom: 20px;
+
+  cursor: pointer;
+  font-size: 1em;
+  transition: background 0.3s ease;
+}
+.logform button.submit:hover{
+  background: rgba(255, 255, 255, 0.3);
+}
+
+
+/* End Sign In Login*/
