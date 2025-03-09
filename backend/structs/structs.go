@@ -40,3 +40,8 @@ type Message struct {
 	Content   string `json:"content"`
 	CreatedAt int    `json:"creationDate"`
 }
+
+type Comment struct {
+	PostId  int    `json:"id"`
+	Comment string `json:"comment"`
+}

@@ -108,6 +108,7 @@ func main() {
 	http.HandleFunc("/addpost", addpost)
 	http.HandleFunc("/posts", getPosts)
 	http.HandleFunc("/comments", getComments)
+	http.HandleFunc("/addcomment", addcomment)
 	http.HandleFunc("/api/category/{categoryName}", handlecategories)
 	http.HandleFunc("/api/{nickname}", profile)
 	http.HandleFunc("/get_categories", servercategories)
@@ -121,6 +122,48 @@ func main() {
 }
 
 func getComments(w http.ResponseWriter, r *http.Request) {
+	cookie := CheckCookie(r)
+	if cookie == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	postId := r.URL.Query().Get("id")
+	exits := checkPost(postId)
+	if !exits {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+}
+
+func checkPost(postId string) bool {
+	checkpost := `
+		SELECT EXISTS(
+			SELECT 1 FROM posts WHERE id = ?
+		);
+	`
+	var exists bool
+	db.QueryRow(checkpost, postId).Scan(&exists)
+	return exists
+}
+
+func addcomment(w http.ResponseWriter, r *http.Request) {
+	cookie := CheckCookie(r)
+	if cookie == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	var commet utils.Comment
+	err := json.NewDecoder(r.Body).Decode(&commet)
+	if err != nil {
+		fmt.Println(err)
+	}
+	user_id := getUserId(cookie.Value)
+	if user_id == 0 {
+		w.WriteHeader(401)
+		return
+	}
+	db.Exec("INSERT INTO comments (user_id, post_id, comment, date) VALUES (?,?,?,strftime('%s', 'now'))", user_id, commet.PostId, commet.Comment)
 }
 
 func fetchemessages(w http.ResponseWriter, r *http.Request) {
