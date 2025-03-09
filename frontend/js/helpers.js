@@ -285,7 +285,9 @@ const creatPosts = (container, data, position) => {
     const like_dislike_containerP = createHTMLel("div", "likeAndDislikeP");
     handleReaction(like_dislike_containerP, "post", postData);
     const commentsbtn = createHTMLel("button", "commentbtn", "🗨️");
-    commentsbtn.addEventListener("click", getcomments);
+    commentsbtn.addEventListener("click", () => {
+      getcomments(postData.id)
+    })
     const postcategories = createcategories(postData.categories);
 
     postcontainer.append(
@@ -302,7 +304,7 @@ const creatPosts = (container, data, position) => {
   });
 };
 
-function getcomments() {
+function getcomments(postId) {
   layout.classList.toggle("layout");
   const comments = createHTMLel("div", "comments showcomment");
   const commentscontainer = createHTMLel("div", "comments_container");
@@ -314,9 +316,13 @@ function getcomments() {
   comments.append(commentscontainer, form);
   const submitbtn = createHTMLel("button", "submitComment", "submit");
   form.append(ipt, submitbtn);
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    fetchComment(form[0].value);
+    let res = await fetchData("/addcomment", {
+      id: postId,
+      comment: form[0].value,
+    });
+    if (res.ok) form[0].value = "";
   });
 
   root.appendChild(comments);
