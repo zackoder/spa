@@ -48,9 +48,6 @@ function isUsernamePath(path) {
   return /^\/[a-zA-Z0-9_-]+$/.test(path);
 }
 
-const main = createHTMLel("main", "main");
-const sidebarLeft = createHTMLel("aside", "sidebar left-sidebar");
-const sidebarRight = createHTMLel("aside", "sidebar right-sidebar");
 
 export const fetchData = async (path, data) => {
   let resp = await fetch(path, {
@@ -204,7 +201,7 @@ export function setupSPA() {
     const link = e.target.closest("a");
     if (link && link.origin === location.origin) {
       e.preventDefault();
-      if (link.textContent === "Sign In" || link.textContent === "Sign Up") {
+      if (link.textContent === "Login" || link.textContent === "Register") {
         let title = document.head.querySelector("title");
         let logstyle = document.querySelector(".log");
         document.head.removeChild(title);
@@ -222,6 +219,7 @@ export function setupSPA() {
 
   handleRoute(location.pathname);
 }
+
 window.addEventListener("popstate", () => {
   offset = 0;
   nomorPosts = false;
@@ -229,6 +227,11 @@ window.addEventListener("popstate", () => {
   const postsContainer = document.querySelector(".postscontainer");
   if (postsContainer) postsContainer.innerHTML = "";
   if (path === "/signin" || path === "/signup") root.innerHTML = "";
+  const title = document.querySelector("title")
+  document.head.removeChild(title);
+  Array.from(document.querySelectorAll("link")).forEach((link) => {
+    if (link.classList.length != 0) document.head.removeChild(link)
+  })
   handleRoute(location.pathname);
 });
 
@@ -319,7 +322,7 @@ function getcomments() {
   root.appendChild(comments);
 }
 
-function fetchComment(comment) {}
+function fetchComment(comment) { }
 
 function createcategories(categories) {
   const postcategories = createHTMLel("div", "postcategories");
@@ -465,7 +468,9 @@ export async function setupPage() {
     document.head.append(style, title);
     addPostPopUp();
     const postsContainer = createHTMLel("div", "postscontainer");
-    main.prepend(sidebarLeft, postsContainer, sidebarRight);
+    const main = createHTMLel("main", "main");
+    const sidebarLeft = createHTMLel("aside", "sidebar left-sidebar");
+    main.prepend(sidebarLeft, postsContainer);
     root.appendChild(main);
 
     await getuser(sidebarLeft);

@@ -121,7 +121,6 @@ func main() {
 }
 
 func getComments(w http.ResponseWriter, r *http.Request) {
-	
 }
 
 func fetchemessages(w http.ResponseWriter, r *http.Request) {
@@ -227,7 +226,9 @@ func insertmsg(sender_id, receiver_id int, content string) error {
 }
 
 func isOnlien(c *Client, receiver_id int) bool {
+	fmt.Println("receiver_id", receiver_id)
 	for client := range c.manager.clients {
+		fmt.Println(client.Nickname, client.Client_id)
 		if client.Client_id == receiver_id {
 			return true
 		}
@@ -930,7 +931,7 @@ func insertdb(db *sql.DB) {
 	  PRAGMA foreign_keys = ON;
 	  CREATE TABLE IF NOT EXISTS users (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		nickname VARCHAR(50),
+		nickname VARCHAR(50) UNIQUE,
 		first_name VARCHAR(50),
 		last_name VARCHAR(50),
 		age VARCHAR(50),

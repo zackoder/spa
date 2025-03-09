@@ -11,62 +11,70 @@ export const signin = async () => {
     // document.documentElement.innerHTML = originalHTML;
     let styleLink = createHTMLel("link", "log", "", {
       key: "href",
-      value: "/frontend/style/log.css",
+      value: "/frontend/style/login.css",
     });
 
     styleLink.rel = "stylesheet";
 
-    let title = createHTMLel("title", "", "Sign In");
+    let docTitle = createHTMLel("title", "", "Sign In");
 
-    document.head.append(styleLink, title);
+    document.head.append(styleLink, docTitle);
 
     /* singin header */
-    let h1 = createHTMLel("h1", "logheader", "Sing In");
+    const container = createHTMLel("div", "container");
+    const form = createHTMLel("form", "", "", { key: "id", value: "loginForm" });
+    form.setAttribute("method", "POST");
+    form.setAttribute("autocomplete", "off");
 
-    /* label and input for email */
-    let formcontainer = createHTMLel("div", "formcontainer");
+    const title = createHTMLel("h3", "title", "Login");
+    form.appendChild(title);
 
-    let form = createHTMLel("form", "logform", "", {
-      key: "method",
-      value: "POST",
-    });
+    const usernameDiv = createHTMLel("div");
+    const usernameLabel = createHTMLel("label", "", "Nickname / Email", { key: "for", value: "username" });
+    const usernameInput = createHTMLel("input", "", "", { key: "type", value: "text" });
+    usernameInput.setAttribute("name", "username");
+    usernameInput.setAttribute("id", "username");
+    const errUsername = createHTMLel("span", "", "testerr", { key: "id", value: "errusername" });
+    usernameDiv.append(usernameLabel, usernameInput, errUsername);
+    form.appendChild(usernameDiv);
 
-    let Emaillbl = createHTMLel(
-      "label",
-      "lbl",
-      "Enter Your Email or Nickname:",
-      {
-        key: "for",
-        value: "emailnpt",
-      }
-    );
+    const passwordDiv = createHTMLel("div", "password");
+    const passwordLabel = createHTMLel("label", "", "Password", { key: "for", value: "password" });
+    const passwordInnerDiv = createHTMLel("div");
+    const passwordInput = createHTMLel("input", "password", "", { key: "type", value: "password" });
+    passwordInput.setAttribute("name", "password");
+    passwordInput.setAttribute("id", "password");
+    const showPasswordBtn = createHTMLel("button", "showpassword", "Show", { key: "id", value: "showpassword" });
+    //change input type
+    changeInputType(passwordInput, showPasswordBtn);
+    passwordInnerDiv.append(passwordInput, showPasswordBtn);
+    const errPassword = createHTMLel("span", "", "testerr", { key: "id", value: "errpassword" });
+    passwordDiv.append(passwordLabel, passwordInnerDiv, errPassword);
+    form.appendChild(passwordDiv);
 
-    let Emailinpt = createHTMLel("input", "inpt", "", {
-      key: "id",
-      value: "emailnpt",
-    });
+    // const rememberDiv = createHTMLel("div");
+    // const rememberInput = createHTMLel("input", "", "", { key: "type", value: "checkbox" });
+    // rememberInput.setAttribute("name", "rememberme");
+    // rememberInput.setAttribute("id", "rememberme");
+    // const rememberLabel = createHTMLel("label", "rememberme", "Remember me", { key: "for", value: "rememberme" });
+    // rememberDiv.append(rememberInput, rememberLabel);
+    // form.appendChild(rememberDiv);
 
-    // Emailinpt.id = "emailnpt";
+    const submitDiv = createHTMLel("div");
+    const submitBtn = createHTMLel("input", "", "", { key: "type", value: "submit" });
+    submitBtn.setAttribute("value", "Login");
+    const registerText = createHTMLel("h3", "", "Don't have an account? ");
+    const registerLink = createHTMLel("a", "", "Register", { key: "href", value: "/signup" });
+    registerText.appendChild(registerLink);
+    submitDiv.append(submitBtn, registerText);
+    form.appendChild(submitDiv);
 
-    /* label and input for password */
-    let passwordlbl = createHTMLel("label", "lbl", "password :", {
-      key: "for",
-      value: "passwordnpt",
-    });
+    container.appendChild(form);
 
-    let passwordinpt = createHTMLel("input", "inpt", "", {
-      key: "name",
-      value: "password",
-    });
-
-    passwordinpt.id = "passwordnpt";
-    passwordinpt.type = "password";
-
-    let submitbtn = createHTMLel("button", "submit", "submit");
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      let email = Emailinpt.value.trim();
-      let password = passwordinpt.value.trim();
+      let email = usernameInput.value.trim();
+      let password = passwordInput.value.trim();
       const data = {
         email: email,
         password: password,
@@ -76,32 +84,32 @@ export const signin = async () => {
       res.then((res) => {
         if (res.ok) {
           document.head.removeChild(styleLink);
-          document.head.removeChild(title);
+          document.head.removeChild(docTitle);
           root.innerHTML = "";
           navigateTo("/");
         }
       });
     });
 
-    const signup = createHTMLel("p", "signuplikn", "click the link to ");
-    const signupLink = createHTMLel("a", "link", "Sign Up", {
-      key: "href",
-      value: "/signup",
-    });
-    signup.appendChild(signupLink);
-    form.append(
-      h1,
-      Emaillbl,
-      Emailinpt,
-      passwordlbl,
-      passwordinpt,
-      signup,
-      submitbtn
-    );
-    formcontainer.appendChild(form);
-    root.appendChild(formcontainer);
+    root.appendChild(container);
   }
 };
+
+function changeInputType(passwordInput, showPasswordBtn) {
+  let show = false
+
+  showPasswordBtn.addEventListener("click", (e) => {
+    e.preventDefault()
+    if (!show) {
+      passwordInput.type = "text";
+      showPasswordBtn.textContent = "Hide";
+    } else {
+      passwordInput.type = "password";
+      showPasswordBtn.textContent = "Show";
+    }
+    show = !show
+  });
+}
 
 // Registration function
 export const signup = async () => {
@@ -138,12 +146,12 @@ export const signup = async () => {
     form.appendChild(nicknameBox);
 
     const nameBox = createHTMLel("div", "name box grid");
-    ["firstname", "lastname"].forEach((field) => {
+    ["Firstname", "Lastname"].forEach((field) => {
       const div = createHTMLel("div");
-      const input = createHTMLel("input", "", "", { key: "type", value: "text" });
+      const input = createHTMLel("input", field, "", { key: "type", value: "text" });
       input.setAttribute("name", field);
       input.setAttribute("id", field);
-      input.setAttribute("placeholder", field.split("n").join("N "));
+      input.setAttribute("placeholder", field.split("n").join(" N"));
       const errSpan = createHTMLel("span", "", "tst errorr", { key: "id", value: `err${field}` });
       div.append(input, errSpan);
       nameBox.appendChild(div);
@@ -186,7 +194,7 @@ export const signup = async () => {
 
     const passwordBox = createHTMLel("div", "password box grid");
     ["password", "confirmpassword"].forEach((field) => {
-      const div = createHTMLel("div", "", "", { key: "style", value: "display:block;" });
+      const div = createHTMLel("div", field, "", { key: "style", value: "display:block;" });
       const input = createHTMLel("input", "", "", { key: "type", value: "password" });
       input.setAttribute("name", field);
       input.setAttribute("id", field);
@@ -205,7 +213,7 @@ export const signup = async () => {
     form.appendChild(submitBox);
 
     const loginText = createHTMLel("h4", "", "Already have an account? ");
-    const loginLink = createHTMLel("a", "", "Login", { key: "href", value: "/login" });
+    const loginLink = createHTMLel("a", "", "Login", { key: "href", value: "/signin" });
     loginText.appendChild(loginLink);
     form.appendChild(loginText);
 
@@ -216,37 +224,40 @@ export const signup = async () => {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
-      let email = Emailinpt.value.trim();
-      let password = passwordinpt.value.trim();
-      let gender = maleipt.checked ? "male" : femaleipt.checked ? "female" : "";
+      const firstNameinpt = document.querySelector('.Firstname')
+      const lastNameinpt = document.querySelector('.Lastname')
+      const password = document.querySelector('#password')
+      console.log(password);
+
+      const confirmpassword = document.querySelector('#confirmpassword')
       const data = {
-        nickName: nicknameInpt.value,
-        firstName: firstNameinpt.value,
-        lastName: lastNameinpt.value,
-        gender: gender,
-        age: ageinpt.value,
-        email: email,
-        password: password,
-        confirmPassword: cpasswordinpt.value.trim(),
+        nickName: nicknameInput.value.trim(),
+        firstName: firstNameinpt.value.trim(),
+        lastName: lastNameinpt.value.trim(),
+        gender: genderSelect.value.trim(),
+        age: birthInput.value.trim(),
+        email: emailInput.value.trim(),
+        password: password.value.trim(),
+        confirmPassword: confirmpassword.value.trim(),
       };
 
       // Validate nickname
-
-      if (!Validation.validateNickname(data.nickName.value.trim())) { return; }
-      if (!Validation.validateFirstname(data.firstName.value.trim())) { return; }
-      if (!Validation.validateLastname(data.lastName.value.trim())) { return; }
+      if (!Validation.validateNickname(data.nickName)) { return; }
+      if (!Validation.validateFirstname(data.firstName)) { return; }
+      if (!Validation.validateLastname(data.lastName)) { return; }
       if (!Validation.validateGender(data.gender)) { return; }
-      if (!Validation.validateAge(data.age.value.trim())) { return; }
+      if (!Validation.validateAge(data.age)) { return; }
       if (!Validation.validateEmail(data.email)) { return; }
       if (!Validation.validatePassword(data.password)) { return; }
       if (!Validation.validateConfirmPassword(data.confirmPassword)) { return; }
 
       let res = fetchData("/sign-up", data);
       res.then((resp) => {
-        if (resp.redirected) {
-          document.head.removeChild(form_title);
+        if (resp.ok) {
+          document.head.removeChild(title);
           document.head.removeChild(styleLink);
-          navigateTo("/");
+          root.innerHTML = "";
+          navigateTo("/signin");
         }
       });
     });

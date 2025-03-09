@@ -17,12 +17,11 @@
 } */
 
 body{
-    background-image: url(../images/bg-login.jpg);
-    background-size: cover;    
-    height: 100vh;
     font-family: "Roboto", serif;
 }
-#app {
+#root {
+    background-image: url(/frontend/images/bg-login.jpg);
+    background-size: cover;    
     height: 100vh;
 }
 .container{

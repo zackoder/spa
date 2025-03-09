@@ -7,12 +7,12 @@ export default class Validation {
 
     //Validate Firstname
     static validateFirstname(firstname) {
-        return this.validateName(firstname, "firstname");
+        return this.validateName(firstname, "Firstname");
     }
 
     //Validate Lastname
     static validateLastname(lastname) {
-        return this.validateName(lastname, "lastname");
+        return this.validateName(lastname, "Lastname");
     }
 
     static validateName(value, name) {
@@ -113,7 +113,7 @@ export default class Validation {
 
     // Validate Password
     static validatePassword(password) {
-        let errEl = document.getElementById('errpass');
+        let errEl = document.getElementById('errpassword');
         if (!password) {
             errEl.style.display = "block";
             errEl.textContent = "Please enter your password";
@@ -154,7 +154,7 @@ export default class Validation {
 
     // Validate Confirm Password
     static validateConfirmPassword(password) {
-        let errEl = document.getElementById('errconfpass');
+        let errEl = document.getElementById('errconfirmpassword');
         let getPassword = document.getElementById('password');
 
         if (!password) {
