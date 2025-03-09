@@ -48,10 +48,6 @@ function isUsernamePath(path) {
   return /^\/[a-zA-Z0-9_-]+$/.test(path);
 }
 
-const main = createHTMLel("main", "main");
-const sidebarLeft = createHTMLel("aside", "sidebar left-sidebar");
-const sidebarRight = createHTMLel("aside", "sidebar right-sidebar");
-
 export const fetchData = async (path, data) => {
   let resp = await fetch(path, {
     method: "POST",
@@ -282,7 +278,9 @@ const creatPosts = (container, data, position) => {
     const like_dislike_containerP = createHTMLel("div", "likeAndDislikeP");
     handleReaction(like_dislike_containerP, "post", postData);
     const commentsbtn = createHTMLel("button", "commentbtn", "🗨️");
-    commentsbtn.addEventListener("click", getcomments);
+    commentsbtn.addEventListener("click", () => {
+      getcomments(postData.id);
+    });
     const postcategories = createcategories(postData.categories);
 
     postcontainer.append(
@@ -299,27 +297,30 @@ const creatPosts = (container, data, position) => {
   });
 };
 
-function getcomments() {
+function getcomments(id) {
   layout.classList.toggle("layout");
   const comments = createHTMLel("div", "comments showcomment");
   const commentscontainer = createHTMLel("div", "comments_container");
   const form = createHTMLel("form", "commentsForm");
   const ipt = createHTMLel("input", "commentInput", "", {
     key: "placeholder",
-    value: "haid hiya 3lik rd 3lih",
+    value: "gol gol shi l3iba",
   });
+
   comments.append(commentscontainer, form);
   const submitbtn = createHTMLel("button", "submitComment", "submit");
   form.append(ipt, submitbtn);
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    fetchComment(form[0].value);
+    let res = await fetchData("/addcomment", {
+      id: id,
+      comment: form[0].value,
+    });
+    if (res.ok) form[0].value = "";
   });
 
   root.appendChild(comments);
 }
-
-function fetchComment(comment) {}
 
 function createcategories(categories) {
   const postcategories = createHTMLel("div", "postcategories");
@@ -464,8 +465,10 @@ export async function setupPage() {
     const title = createHTMLel("title", "", "Forum");
     document.head.append(style, title);
     addPostPopUp();
+    const main = createHTMLel("main", "main");
+    const sidebarLeft = createHTMLel("aside", "sidebar left-sidebar");
     const postsContainer = createHTMLel("div", "postscontainer");
-    main.prepend(sidebarLeft, postsContainer, sidebarRight);
+    main.prepend(sidebarLeft, postsContainer);
     root.appendChild(main);
 
     await getuser(sidebarLeft);

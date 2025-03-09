@@ -3,9 +3,12 @@ import { socket } from "./chatFunctionality.js";
 import { user } from "./navbar.js";
 
 export const getuser = async (sidebar) => {
+  if (document.querySelector(".usersContainer")) return;
   const usersContainer = createHTMLel("div", "usersContainer");
   let res = await fetch("/getusers");
   let nickNames = await res.json();
+  console.log(nickNames);
+
   nickNames.forEach((nickName) => {
     const user = createUsrContainer(nickName);
     const userpopup = addeventToUser(user, nickName.nickname);
@@ -128,7 +131,7 @@ async function handelmessagesscroll(nickname) {
   const elrect = element.getBoundingClientRect();
 
   const data = await getmessages(nickname);
-  console.log("scroll: ",element.scrollTop);
+  console.log("scroll: ", element.scrollTop);
   if (data === undefined) return;
   if (
     Math.abs(element.scrollTop) >=

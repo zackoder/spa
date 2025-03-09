@@ -9,14 +9,19 @@ import { user } from "./navbar.js";
 export let socket = null;
 
 export const socketEvents = () => {
-  // socket.send(JSON.stringify({ to: receiver, content: content }));
 
   socket.onopen = (e) => {
     console.log("the client is connected to the server");
   };
 
+  socket.onclose = () => {
+    socket = null;
+  };
+
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
+    console.log("data", data);
+
     if (data.user) {
       handleconnection(data);
       return;
@@ -59,8 +64,10 @@ function scrolldown(parent, newMessage) {
 }
 
 export function upgradeconnection() {
+  console.log("socket befor upgreade:", socket);
   if (socket !== null) return;
   socket = new WebSocket("ws://localhost:8080/ws");
+  console.log("socket after upgreade:", socket);
 }
 
 function handleconnection(data) {

@@ -1,12 +1,16 @@
+import { socket } from "./chatFunctionality.js";
 import { createHTMLel, fetchData, navigateTo } from "./helpers.js";
 import { originalHTML } from "./index.js";
+import { user } from "./navbar.js";
 
 const root = document.querySelector(".root");
 
 export const signin = async () => {
   let res = await fetch("/getNickName");
-  if (res.ok) navigateTo("/");
-  else {
+  if (res.ok) {
+    root.innerHTML = "";
+    navigateTo("/");
+  } else {
     // document.documentElement.innerHTML = originalHTML;
     let styleLink = createHTMLel("link", "log", "", {
       key: "href",
@@ -104,8 +108,11 @@ export const signin = async () => {
 
 export const signup = async () => {
   let res = await fetch("/getNickName");
-  if (res.ok) navigateTo("/");
-  else {
+  if (res.ok) {
+    console.log("user name", user);
+    root.innerHTML = "";
+    navigateTo("/");
+  } else {
     let styleLink = createHTMLel("link", "log", "", {
       key: "href",
       value: "/frontend/style/log.css",
@@ -258,10 +265,11 @@ export const signup = async () => {
 
       let res = fetchData("/sign-up", data);
       res.then((resp) => {
-        if (resp.redirected) {
+        if (resp.ok) {
           document.head.removeChild(title);
           document.head.removeChild(styleLink);
-          navigateTo("/");
+          root.innerHTML = "";
+          navigateTo("/signin");
         }
       });
     });
@@ -305,6 +313,7 @@ export const signout = async () => {
     console.log("res: ", res);
 
     if (res.ok) {
+      socket.close();
       root.innerHTML = "";
       navigateTo("/signin");
     }

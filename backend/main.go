@@ -134,7 +134,6 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
-	
 }
 
 func checkPost(postId string) bool {
@@ -480,6 +479,15 @@ func getName(w http.ResponseWriter, r *http.Request) {
 	var nickname string
 
 	if err := db.QueryRow(query, cookie.Value).Scan(&nickname); err != nil {
+		if err == sql.ErrNoRows {
+			http.SetCookie(w, &http.Cookie{
+				Value:  "",
+				Name:   "forum_token",
+				MaxAge: -1,
+			})
+			w.WriteHeader(401)
+			return
+		}
 		fmt.Println(err)
 		json.NewEncoder(w).Encode(map[string]string{"message": "unautorized"})
 		return
@@ -874,7 +882,6 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(map[string]string{"message": "Somthing went wrong"})
 			return
 		}
-		http.Redirect(w, r, "/signin", http.StatusFound)
 	}
 }
 
@@ -939,6 +946,17 @@ func signin(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, &cookie)
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func setcooki(name, val string, time time.Time) *http.Cookie {
+	fmt.Println("cookie")
+	cookie := http.Cookie{
+		Name:     name,
+		Value:    val,
+		Expires:  time,
+		HttpOnly: true,
+	}
+	return &cookie
 }
 
 func CheckCredentials(email, password string) (string, int) {
