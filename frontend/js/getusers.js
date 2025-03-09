@@ -1,6 +1,6 @@
 import { createHTMLel, formatDate, throttle } from "./helpers.js";
-import { socket } from "./chatFunctionality.js";
 import { user } from "./navbar.js";
+import { socket } from "./chatFunctionality.js";
 
 export const getuser = async (sidebar) => {
   const usersContainer = createHTMLel("div", "usersContainer");

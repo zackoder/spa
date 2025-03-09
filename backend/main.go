@@ -865,7 +865,6 @@ func signin(w http.ResponseWriter, r *http.Request) {
 
 	var siginData signinRequest
 	json.NewDecoder(r.Body).Decode(&siginData)
-	fmt.Println(siginData)
 	message, userId := CheckCredentials(siginData.Userinpt, siginData.Password)
 	if message != "" {
 		w.WriteHeader(http.StatusNotFound)

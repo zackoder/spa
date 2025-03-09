@@ -10,13 +10,20 @@ export let socket = null;
 
 export const socketEvents = () => {
   // socket.send(JSON.stringify({ to: receiver, content: content }));
+  console.log("socket events activeted");
 
   socket.onopen = (e) => {
     console.log("the client is connected to the server");
   };
 
+  socket.onclose = () =>{
+    socket = null;
+  }
+
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
+    console.log("message data: ", data);
+
     if (data.user) {
       handleconnection(data);
       return;
@@ -59,11 +66,14 @@ function scrolldown(parent, newMessage) {
 }
 
 export function upgradeconnection() {
-  if (socket !== null) return;
+  if (socket != null) return;
   socket = new WebSocket("ws://localhost:8080/ws");
+  return socket
 }
 
 function handleconnection(data) {
+  console.log("data", data);
+
   let users = document.querySelectorAll(".user");
   if (data.user === "online") {
     const getUser = document.querySelector(`#${data.nickname}`);
@@ -83,5 +93,6 @@ function changeUserstat(users, stat, nickname) {
   users.forEach((user) => {
     if (user.children[0].textContent === nickname)
       user.children[1].textContent = stat;
+      return;
   });
 }

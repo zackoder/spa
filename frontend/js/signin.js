@@ -1,3 +1,4 @@
+import { socket } from "./chatFunctionality.js";
 import { createHTMLel, fetchData, navigateTo } from "./helpers.js";
 import { originalHTML } from "./index.js";
 import Validation from "./validation.js";
@@ -302,6 +303,8 @@ export const signout = async () => {
 
     if (res.ok) {
       root.innerHTML = "";
+      socket.close();
+
       navigateTo("/signin");
     }
   } catch (err) {
