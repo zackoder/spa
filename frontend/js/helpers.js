@@ -286,7 +286,8 @@ const creatPosts = (container, data, position) => {
     handleReaction(like_dislike_containerP, "post", postData);
     const commentsbtn = createHTMLel("button", "commentbtn", "🗨️");
     commentsbtn.addEventListener("click", () => {
-      getcomments(postData.id)
+      postcontainer.removeChild(commentsbtn)
+      getcomments(postData.id, postcontainer)
     })
     const postcategories = createcategories(postData.categories);
 
@@ -304,14 +305,13 @@ const creatPosts = (container, data, position) => {
   });
 };
 
-function getcomments(postId) {
-  layout.classList.toggle("layout");
-  const comments = createHTMLel("div", "comments showcomment");
+async function getcomments(postId, postcontainer) {
+  const comments = createHTMLel("div", "comments");
   const commentscontainer = createHTMLel("div", "comments_container");
   const form = createHTMLel("form", "commentsForm");
   const ipt = createHTMLel("input", "commentInput", "", {
     key: "placeholder",
-    value: "haid hiya 3lik rd 3lih",
+    value: "Add your comment",
   });
   comments.append(commentscontainer, form);
   const submitbtn = createHTMLel("button", "submitComment", "submit");
@@ -324,11 +324,44 @@ function getcomments(postId) {
     });
     if (res.ok) form[0].value = "";
   });
+  let data = await fetchComment(postId)
+  console.log(data);
+  if (data !== null) {
 
-  root.appendChild(comments);
+    data.forEach((comment) => {
+      const divComment = createHTMLel("div", "comment");
+      const usernameComment = createHTMLel("p", "usernameComment");
+      const containerComment = createHTMLel("div", "containerComment");
+      const commentParg = createHTMLel("p", "commentParg");
+      const commentDate = createHTMLel("p", "commentDate");
+      containerComment.append(commentParg, commentDate);
+      divComment.append(usernameComment, containerComment);
+      const userLogo = createHTMLel("span", "userLogo", comment.username[0]);
+      const username = createHTMLel("span", "username", " " + comment.username);
+      usernameComment.append(userLogo, username);
+      commentParg.textContent = comment.comment;
+      commentDate.textContent = formatDate(comment.creationDate);
+      commentscontainer.appendChild(divComment);
+    });
+  }
+
+  postcontainer.appendChild(comments)
 }
 
-function fetchComment(comment) { }
+async function fetchComment(postId) {
+  try {
+    const response = await fetch(`/comments?id=${postId}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data
+    }
+
+  } catch (error) {
+    console.error("Error", error)
+  }
+
+
+}
 
 function createcategories(categories) {
   const postcategories = createHTMLel("div", "postcategories");

@@ -42,6 +42,8 @@ type Message struct {
 }
 
 type Comment struct {
-	PostId  int    `json:"id"`
-	Comment string `json:"comment"`
+	PostId       int    `json:"id"`
+	Comment      string `json:"comment"`
+	CreationDate int    `json:"creationDate"`
+	Username     string `json:"username"`
 }

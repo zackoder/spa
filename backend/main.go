@@ -128,15 +128,19 @@ func getComments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postId := r.URL.Query().Get("id")
+	postId, _ := strconv.Atoi(r.URL.Query().Get("id"))
+
 	exits := checkPost(postId)
 	if !exits {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	dataComments := queryComments(postId)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(dataComments)
 }
 
-func checkPost(postId string) bool {
+func checkPost(postId int) bool {
 	checkpost := `
 		SELECT EXISTS(
 			SELECT 1 FROM posts WHERE id = ?
@@ -145,6 +149,28 @@ func checkPost(postId string) bool {
 	var exists bool
 	db.QueryRow(checkpost, postId).Scan(&exists)
 	return exists
+}
+
+func queryComments(postId int) []utils.Comment {
+	query := `SELECT c.comment, u.nickname, c.date
+				FROM comments AS c 
+				INNER JOIN users AS u ON u.id = c.user_id 
+				WHERE c.post_id = ?;`
+	rows, err := db.Query(query, postId)
+	if err != nil {
+		fmt.Println("quering comments", err)
+		return nil
+	}
+	var dataComments []utils.Comment
+	for rows.Next() {
+		var comment utils.Comment
+		comment.PostId = postId
+		if err := rows.Scan(&comment.Comment, &comment.Username, &comment.CreationDate); err != nil {
+			fmt.Println("error scan comments", err)
+		}
+		dataComments = append(dataComments, comment)
+	}
+	return dataComments
 }
 
 func addcomment(w http.ResponseWriter, r *http.Request) {
@@ -1009,7 +1035,7 @@ func insertdb(db *sql.DB) {
 		user_id INTEGER NOT NULL,
 		post_id INTEGER NOT NULL,
 		comment TEXT NOT NULL,
-		date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		date INTEGER,
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 		FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 	  );
