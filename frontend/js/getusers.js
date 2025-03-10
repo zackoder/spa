@@ -42,18 +42,18 @@ export function addeventToUser(user, nickname) {
     const body = div.children[1];
     div.classList.toggle("showen");
     const data = await getmessages(nickname);
-    if (body.children.length === 0) {
-      if (data) {
-        data.forEach((msg) => {
-          creatmessage(msg, div.querySelector(".body"), nickname, "append");
-        });
-      }
+    console.log(body.children.length === 0);
+
+    if (data) {
+      data.forEach((msg) => {
+        creatmessage(msg, div.querySelector(".body"), nickname, "append");
+      });
     }
 
-    const throttledScrollHandler = throttle(
-      () => handelmessagesscroll(nickname),
-      1000
-    );
+    const throttledScrollHandler = throttle(() => {
+      handelmessagesscroll(nickname);
+      console.log("tring to fetch");
+    }, 100);
     body.addEventListener("scroll", throttledScrollHandler);
   });
   return div;
@@ -68,13 +68,14 @@ async function getmessages(nickname) {
   if (data === null) return;
   else {
     messagesOffset += data.length;
+    console.log("messages", data);
+
     return data;
   }
 }
 
-export function creatmessage(msg, parent, nickName, possition) {
+export function creatmessage(msg, parent, nickName) {
   const div = createmsgcontaine(msg);
-
   if (msg.to === user) {
     div.children[0].textContent = nickName;
     div.classList.add("get");
@@ -128,23 +129,24 @@ function cratepopUpForUser(nickname) {
 
 async function handelmessagesscroll(nickname) {
   const element = document.querySelector(`#${nickname} .body`);
+  const scrollHeightBefore = element.scrollHeight;
   const elrect = element.getBoundingClientRect();
+  console.log(element.scrollHeight - elrect.height);
+  console.log(element.scrollTop);
 
-  const data = await getmessages(nickname);
-  console.log("scroll: ", element.scrollTop);
-  if (data === undefined) return;
   if (
-    Math.abs(element.scrollTop) >=
-    element.scrollHeight - (elrect.height + 100)
+    Math.abs(element.scrollTop) + elrect.height >=
+    element.scrollHeight - elrect.height
   ) {
-    data.forEach((msg) => {
-      creatmessage(msg, element, nickname, "prepend");
-      let i = 0;
-      setInterval(() => {
-        if (i === data.length) return;
-        i++;
-        element.scrollTop += 60;
-      }, 100);
+    const data = await getmessages(nickname);
+    if (!data) return;
+
+    data.forEach((msg) => creatmessage(msg, element, nickname));
+
+    requestAnimationFrame(() => {
+      console.log("hello");
+
+      element.scrollTop += element.scrollHeight - scrollHeightBefore;
     });
   }
 }
