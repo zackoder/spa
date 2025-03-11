@@ -47,3 +47,8 @@ type Comment struct {
 	CreationDate int    `json:"creationDate"`
 	Username     string `json:"username"`
 }
+
+type SigninRequest struct {
+	Userinpt string `json:"email"`
+	Password string `json:"password"`
+}
