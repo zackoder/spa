@@ -67,7 +67,8 @@ function scrolldown(parent, newMessage) {
 
 export function upgradeconnection() {
   if (socket != null) return;
-  socket = new WebSocket("ws://10.1.9.8:8080/ws");
+  // socket = new WebSocket("ws://10.1.9.8:8080/ws");
+  socket = new WebSocket("ws://localhost:8080/ws");
   return socket
 }
 

@@ -49,7 +49,7 @@ export function addeventToUser(user, nickname) {
 
     const throttledScrollHandler = throttle(
       () => handelmessagesscroll(nickname),
-      1000
+      100
     );
     body.addEventListener("scroll", throttledScrollHandler);
   });
@@ -125,23 +125,21 @@ function cratepopUpForUser(nickname) {
 
 async function handelmessagesscroll(nickname) {
   const element = document.querySelector(`#${nickname} .body`);
+  const scorllHeightBefore = element.scrollHeight
   const elrect = element.getBoundingClientRect();
 
-  const data = await getmessages(nickname);
-  console.log("scroll: ",element.scrollTop);
-  if (data === undefined) return;
   if (
-    Math.abs(element.scrollTop) >=
-    element.scrollHeight - (elrect.height + 100)
+    Math.abs(element.scrollTop) + elrect.height >=
+    element.scrollHeight - elrect.height
   ) {
+    const data = await getmessages(nickname);
+    console.log("scroll: ",element.scrollTop);
+    if (!data) return;
     data.forEach((msg) => {
-      creatmessage(msg, element, nickname, "prepend");
-      let i = 0;
-      setInterval(() => {
-        if (i === data.length) return;
-        i++;
-        element.scrollTop += 60;
-      }, 100);
+      creatmessage(msg, element, nickname, "prepend");      
+    });
+    requestAnimationFrame(() => {
+      element.scrollTop += element.scrollHeight - scorllHeightBefore;
     });
   }
 }
