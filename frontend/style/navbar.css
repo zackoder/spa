@@ -4,7 +4,7 @@
   z-index: 3;
   height: 60px;
   width: 100%;
-  background-color: var(--bg);
+  background-color: var(--header-bg);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -44,7 +44,7 @@
   border-top: 1px solid rgb(214, 214, 214);
   display: flex;
   align-items: center;
-  background-color: var(--bg);
+  background-color: var(--header-bg);
   box-shadow: var(--shadow);
   transition: top 0.5s ease-in-out;
   overflow: hidden;
@@ -131,16 +131,79 @@
 
 .addPostContainer {
   display: none;
+  padding-left: 20px;
+  padding-right: 20px;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   border: 1px solid black;
-  height: 300px;
-  width: 600px;
-  max-width: 90%;
-  background-color: white;
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--bg);
   z-index: 10;
+  border-radius: 8px;
+}
+
+h1.addPostHead {
+  text-align: center;
+  font-size: 2em;
+  margin-bottom: 10px;
+}
+
+.addPostContainer .divTitle,
+.addPostContainer .divContent {
+  width: 90%;
+  margin: 0 auto;
+}
+
+.addPostContainer .divTitle {
+  margin-bottom: 20px;
+}
+
+.addPostContainer .divTitle input.inpt,
+.addPostContainer .divContent textarea.contentErea {
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px dashed;
+  outline: 0;
+  margin-left: 4px;
+  margin-top: 7px;
+  width: 100%;
+  display: block;
+}
+
+.addPostContainer .divContent label.lbl {
+  text-transform: capitalize;
+}
+
+.addPostContainer .divContent textarea.contentErea {
+  height: 100px;
+}
+
+button.submitbtn {
+  width: 200px;
+  /* margin: auto; */
+  padding: 5px 0;
+  text-transform: capitalize;
+  font-size: 18px;
+  border: 1px solid #000;
+  outline: 0;
+  background-color: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  position: relative;
+  left: calc(50% - 100px);
+  transition: all .5s;
+}
+
+button.submitbtn:hover {
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #fff;
+
+
 }
 
 .show {
@@ -153,7 +216,8 @@
 }
 
 .errorp {
-  margin: 20px 0 0 20px;
+  display: none;
+  margin: 0 0 15px 10px;
   color: red;
   font-size: 1.25rem;
 }

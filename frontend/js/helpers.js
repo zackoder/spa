@@ -107,7 +107,7 @@ export const sendPost = async (title, content, categories, errp) => {
 };
 
 export const addPostPopUp = async () => {
-  const div = createHTMLel("div", "addPostContainer");
+  const div = createHTMLel("div", "addPostContainer show");
   const h1 = createHTMLel("h1", "addPostHead", "Creat Post");
   const titleLbl = createHTMLel("label", "lbl", "Title", {
     key: "for",
@@ -117,6 +117,8 @@ export const addPostPopUp = async () => {
     key: "placeholder",
     value: "Enter your title",
   });
+  const divTitle = createHTMLel("div", "divTitle")
+  divTitle.append(titleLbl, titleinpt);
   const contentLbl = createHTMLel("label", "lbl", "add content", {
     key: "for",
     value: "contentT",
@@ -125,6 +127,8 @@ export const addPostPopUp = async () => {
     key: "placeholder",
     value: "enter the content",
   });
+  const divContent = createHTMLel("div", "divContent")
+  divContent.append(contentLbl, contnetinpt)
   const categories = createHTMLel("div", "categories");
   await creatcategories(categories, "div");
 
@@ -151,10 +155,12 @@ export const addPostPopUp = async () => {
 
   div.append(
     h1,
-    titleLbl,
-    titleinpt,
-    contentLbl,
-    contnetinpt,
+    divTitle,
+    divContent,
+    // titleLbl,
+    // titleinpt,
+    // contentLbl,
+    // contnetinpt,
     categories,
     errp,
     submitbtn

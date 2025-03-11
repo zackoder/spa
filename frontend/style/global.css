@@ -1,7 +1,9 @@
 :root {
-  --bg: #deeaf5;
-  --header-bg: #f4f5fe;
-  --bg1: #ecf2f7;
+  /* --bg: #deeaf5; */
+  --bg1: #edf2fb;
+  --bg: #e2eafc;
+  --header-bg: #ccdbfd;
+  /* --header-bg: #f4f5fe; */
   --onlinebg: #e8fff2;
   --text: #444;
   --font: sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
