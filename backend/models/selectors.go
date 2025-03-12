@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"reat-time-forum/utils"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func QueryComments(postId int) []utils.Comment {
@@ -146,4 +148,34 @@ func SelectUserNicknameAndId(token string) (utils.Posts, int) {
 		fmt.Println(err)
 	}
 	return NewPost, user_id
+}
+
+func Select(w http.ResponseWriter, username, password string) int {
+	fmt.Println("username", username)
+	// query := `SELECT id, password FROM users WHERE (nickname = ? AND password = ?) OR (email = ? AND password = ?)`
+	query := `SELECT id, password FROM users WHERE nickname = ?  OR email = ?`
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		fmt.Println("err prepare", err)
+		utils.CreateJson(w, "there is an error try another time", http.StatusInternalServerError)
+		return -1
+	}
+	defer stmt.Close()
+	var id int
+	var hashPassword string
+
+	err = stmt.QueryRow(username, username).Scan(&id, &hashPassword)
+	// if err == sql.ErrNoRows{}
+	if err != nil {
+		fmt.Println("query row err", err)
+		utils.CreateJson(w, "Username or Password not found", http.StatusMethodNotAllowed)
+		return -1
+	}
+	if err = bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(password)); err != nil {
+		fmt.Println("compare password err", err)
+		utils.CreateJson(w, "your password incorrect", http.StatusMethodNotAllowed)
+		return -1
+	}
+	fmt.Println("id", id)
+	return id
 }

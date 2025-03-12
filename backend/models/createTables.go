@@ -26,10 +26,10 @@ func Insertdb() {
 	  );
 
 	  CREATE TABLE IF NOT EXISTS sessions (
-		user_id INTEGER NOT NULL,
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER NOT NULL,  -- Add UNIQUE constraint here
 		token VARCHAR(255) UNIQUE,
 		creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		PRIMARY KEY (user_id, token),
 		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 	  );
 

@@ -28,6 +28,8 @@ export const socketEvents = () => {
       handleconnection(data);
       return;
     }
+    console.log(data);
+    
 
     const senderchatbox = document.querySelector("#" + data.from);
 

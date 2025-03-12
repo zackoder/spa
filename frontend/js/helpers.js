@@ -1,4 +1,4 @@
-import { navbar, searchBar } from "./navbar.js";
+import { navbar, searchBar, user } from "./navbar.js";
 import { root } from "./navbar.js";
 
 import { routes } from "./index.js";
@@ -19,13 +19,12 @@ export const createHTMLel = (
 };
 
 export const layout = createHTMLel("div");
+
 layout.addEventListener("click", () => {
   const post = document.querySelector(".show");
-  const comments = document.querySelector(".showcomment");
-  if (comments) root.removeChild(comments);
   document.body.style.overflow = "";
   layout.classList.toggle("layout");
-  if (post) post.classList.toggle("show");
+  if (post) root.removeChild(post);
 });
 
 root.append(layout);
@@ -86,6 +85,7 @@ export const sendPost = async (title, content, categories, errp) => {
   };
 
   const res = await fetchData("/addpost", data);
+
   if (!res.ok) {
     console.log("while adding a post the res is not ok ", res);
     return;
@@ -109,6 +109,13 @@ export const sendPost = async (title, content, categories, errp) => {
 export const addPostPopUp = async () => {
   const div = createHTMLel("div", "addPostContainer show");
   const h1 = createHTMLel("h1", "addPostHead", "Creat Post");
+  const spanClose = createHTMLel("span", "closepopup", "X");
+  spanClose.addEventListener("click", () => {
+    layout.classList.toggle("layout");
+    root.removeChild(div);
+    document.body.style.overflow = "";
+  });
+  h1.appendChild(spanClose);
   const titleLbl = createHTMLel("label", "lbl", "Title", {
     key: "for",
     value: "titelInpt",
@@ -166,6 +173,7 @@ export const addPostPopUp = async () => {
     submitbtn
   );
   root.appendChild(div);
+  titleinpt.focus();
 };
 
 export const creatcategories = async (categoriesSlider, type) => {
@@ -324,36 +332,46 @@ async function getcomments(postId, postcontainer) {
   form.append(ipt, submitbtn);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    let res = await fetchData("/addcomment", {
+    const data = {
       id: postId,
       comment: form[0].value,
-    });
-    if (res.ok) form[0].value = "";
+    }
+    let res = await fetchData("/addcomment", data);
+    data.creationDate = 0
+    data.username = user;
+
+    if (res.ok) {
+      let newComment = createComment(data);
+      commentscontainer.appendChild(newComment);
+      form[0].value = "";
+    };
   });
   let data = await fetchComment(postId)
-  console.log(data);
   if (data !== null) {
 
     data.forEach((comment) => {
-      const divComment = createHTMLel("div", "comment");
-      const usernameComment = createHTMLel("p", "usernameComment");
-      const containerComment = createHTMLel("div", "containerComment");
-      const commentParg = createHTMLel("p", "commentParg");
-      const commentDate = createHTMLel("p", "commentDate");
-      containerComment.append(commentParg, commentDate);
-      divComment.append(usernameComment, containerComment);
-      const userLogo = createHTMLel("span", "userLogo", comment.username[0]);
-      const username = createHTMLel("span", "username", " " + comment.username);
-      usernameComment.append(userLogo, username);
-      commentParg.textContent = comment.comment;
-      commentDate.textContent = formatDate(comment.creationDate);
+      let divComment = createComment(comment)
       commentscontainer.appendChild(divComment);
     });
   }
 
   postcontainer.appendChild(comments)
 }
-
+function createComment(comment) {
+  const divComment = createHTMLel("div", "comment");
+  const usernameComment = createHTMLel("p", "usernameComment");
+  const containerComment = createHTMLel("div", "containerComment");
+  const commentParg = createHTMLel("p", "commentParg");
+  const commentDate = createHTMLel("p", "commentDate");
+  containerComment.append(commentParg, commentDate);
+  divComment.append(usernameComment, containerComment);
+  const userLogo = createHTMLel("span", "userLogo", comment.username[0]);
+  const username = createHTMLel("span", "username", " " + comment.username);
+  usernameComment.append(userLogo, username);
+  commentParg.textContent = comment.comment;
+  commentDate.textContent = formatDate(comment.creationDate);
+  return divComment
+}
 async function fetchComment(postId) {
   try {
     const response = await fetch(`/comments?id=${postId}`);
@@ -511,7 +529,7 @@ export async function setupPage() {
     style.rel = "stylesheet";
     const title = createHTMLel("title", "", "Forum");
     document.head.append(style, title);
-    addPostPopUp();
+    // addPostPopUp();
     const postsContainer = createHTMLel("div", "postscontainer");
     const main = createHTMLel("main", "main");
     const sidebarLeft = createHTMLel("aside", "sidebar left-sidebar");

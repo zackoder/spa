@@ -19,7 +19,7 @@ func Signout(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, &http.Cookie{
 		Value:  "",
-		Name:   "forum_token",
+		Name:   "token",
 		MaxAge: -1,
 	})
 

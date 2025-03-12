@@ -21,7 +21,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
+  gap: 20px;
   padding-bottom: 20px;
 }
 
@@ -36,7 +36,7 @@
   border: 1px solid black;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow);
+  box-shadow: 0 0 10px 0 rgba(63, 63, 63, 0.774);;
   max-width: 800px;
   width: 100%;
 }
@@ -157,9 +157,6 @@
   margin: 5px 0;
 }
 
-.nickname {
-}
-
 .stat {
   font-size: 0.75rem;
   color: rgb(49, 49, 49);
@@ -269,29 +266,39 @@
 }
 
 .sendmessage {
-  width: 90%;
-  height: 30px;
-  margin-right: 10px;
-  border-radius: 10px;
-  padding-left: 10px;
-  border: dashed 2px;
+    width: 90%;
+    height: 30px;
+    /* margin-right: 10px; */
+    border-radius: 10px;
+    padding-left: 10px;
+    border: dashed 2px;
+    outline: none;
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .submitmsg {
   height: 30px;
   width: 30px;
-  border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.384);
-  border: none;
+  /* border-radius: 50%; */
+  /* background-color: rgba(255, 255, 255, 0.384); */
+  background-color: #fff;
+  border-radius: 10px;
   font-weight: 600;
-  border: 1px rgba(128, 128, 128, 0.705) solid;
-  box-shadow: 0 0 5px 2px rgba(48, 48, 48, 0.582);
-  transition: all 0.5s ease-in-out;
+  /* border: 1px rgba(128, 128, 128, 0.705) solid; */
+  border: dashed 2px;
+  /* box-shadow: 0 0 5px 2px rgba(48, 48, 48, 0.582); */
+  border-left: none;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  cursor: pointer;
+  /* transition: all 0.5s ease-in-out; */
 }
 
 .submitmsg:hover {
-  background-color: rgba(0, 0, 0, 0.329);
-  box-shadow: 0 2px 3px 5px rgba(48, 48, 48, 0.582);
+  /* background-color: rgba(0, 0, 0, 0.329);
+  box-shadow: 0 2px 3px 5px rgba(48, 48, 48, 0.582); */
 }
 /* .comments {
   position: fixed;
@@ -359,4 +366,23 @@ button.submitComment {
   border-left: none;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+}
+
+
+button.commentbtn {
+  height: 30px;
+  width: 25%;
+  margin: auto;
+  border-radius: 20px;
+  background-color: #fff;
+  border: 1px solid #000;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background 300ms;
+}
+
+button.commentbtn:hover{
+  background-color: var(--bg);
+  color: black;
+  box-shadow: var(--shadow);
 }

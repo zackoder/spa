@@ -98,7 +98,7 @@
 }
 
 .category {
-  background-color: #f5f5f5;
+  background-color: #fff;
   color: #333;
   padding: 10px 16px;
   font-size: 14px;
@@ -109,10 +109,15 @@
   white-space: nowrap;
 }
 
-.category:hover {
+.category:hover,
+button.submitbtn:hover {
   background-color: var(--bg);
   color: black;
-  box-shadow: 0 0 5px 1px rgb(63, 63, 63);
+  box-shadow: var(--shadow)
+}
+
+img.addpost{
+  cursor: pointer;
 }
 
 .arrows {
@@ -149,6 +154,15 @@ h1.addPostHead {
   text-align: center;
   font-size: 2em;
   margin-bottom: 10px;
+  margin-top: 10px;
+  position: relative;
+}
+
+h1 span.closepopup {
+  position: absolute;
+  right: 0;
+  font-size: 0.8em;
+  cursor: pointer;
 }
 
 .addPostContainer .divTitle,
@@ -187,7 +201,7 @@ button.submitbtn {
   padding: 5px 0;
   text-transform: capitalize;
   font-size: 18px;
-  border: 1px solid #000;
+  border: 1px solid #fff;
   outline: 0;
   background-color: #fff;
   border-radius: 5px;
@@ -198,13 +212,19 @@ button.submitbtn {
   transition: all .5s;
 }
 
-button.submitbtn:hover {
+/* button.submitbtn:hover {
   background-color: #000;
   color: #fff;
   border: 1px solid #fff;
 
 
-}
+} */
+
+/* .category:hover {
+  background-color: var(--bg);
+  color: black;
+  box-shadow: 0 0 5px 1px rgb(63, 63, 63);
+} */
 
 .show {
   display: block;

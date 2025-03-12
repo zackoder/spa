@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"reat-time-forum/utils"
 )
@@ -127,4 +129,55 @@ func InsertNewUser(userId int, uuid string) error {
 		fmt.Println(err)
 	}
 	return err
+}
+
+func CreateSession(w http.ResponseWriter, userid int, session string) {
+	query := `INSERT INTO sessions(user_id, token) 
+			  VALUES(?, ?)
+			  ON CONFLICT (token) 
+			  DO UPDATE SET
+				token = EXCLUDED.token, 
+				creation_date = CURRENT_TIMESTAMP;
+			`
+
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Println("no rows")
+		}
+		fmt.Println("exec", err)
+		utils.CreateJson(w, "there are an error try another time", http.StatusInternalServerError)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(userid, session)
+	if err != nil {
+		fmt.Println("exec", err)
+		utils.CreateJson(w, "there are an error try another time", http.StatusInternalServerError)
+		return
+	}
+}
+
+func Insert(w http.ResponseWriter, nickname string, firstname string, lastname string, gender string, age string, email string, password string) int {
+	query := `INSERT INTO users(nickname, first_name, last_name, gender, age, email, password) VALUES(?, ?, ?, ?, ?, ?, ?);`
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		utils.CreateJson(w, "there is an error try another time", http.StatusInternalServerError)
+		return -1
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(nickname, firstname, lastname, gender, age, email, password)
+	if err != nil {
+		utils.CreateJson(w, "there is an error try another time", http.StatusInternalServerError)
+		return -1
+	}
+
+	if err != nil && strings.Contains(err.Error(), "email") {
+		utils.CreateJson(w, "email already used try another email", http.StatusFound)
+		return -1
+	}
+	lastId, _ := res.LastInsertId()
+	return int(lastId)
 }

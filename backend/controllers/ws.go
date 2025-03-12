@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sync"
 
+	"reat-time-forum/middleware"
 	"reat-time-forum/models"
 	"reat-time-forum/utils"
 
@@ -26,10 +27,11 @@ type Manager struct {
 type ClientList map[*Client]bool
 
 type Client struct {
-	Connection *websocket.Conn
-	manager    *Manager
-	Client_id  int
-	Nickname   string
+	Connection       *websocket.Conn
+	NbrOfConnections int
+	manager          *Manager
+	Client_id        int
+	Nickname         string
 }
 
 func NewManager() *Manager {
@@ -73,25 +75,37 @@ func (m *Manager) addClient(client *Client) {
 func (m *Manager) removeClient(client *Client) {
 	m.Lock()
 	defer m.Unlock()
+
 	if _, ok := m.clients[client]; ok {
 		client.Connection.Close()
 		delete(m.clients, client)
-		for c := range m.clients {
-			c.Connection.WriteJSON(map[string]string{"user": "offline", "nickname": client.Nickname})
+		if client.NbrOfConnections == 1 {
+			for c := range m.clients {
+				if c.Client_id != client.Client_id {
+					c.Connection.WriteJSON(map[string]string{"user": "offline", "nickname": client.Nickname})
+				}
+			}
 		}
 	}
 }
+
+var rateLimit middleware.RateLimit
 
 func (c *Client) readmessages() {
 	defer func() {
 		c.manager.removeClient(c)
 	}()
 	for {
+
 		_, payload, err := c.Connection.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				fmt.Println(err)
 			}
+			break
+		}
+		allowed := rateLimit.Allow(c.Connection.RemoteAddr().String())
+		if !allowed {
 			break
 		}
 		var msg utils.Message
@@ -100,7 +114,7 @@ func (c *Client) readmessages() {
 			fmt.Println(err)
 		}
 
-		var sender_nickname string
+		// var sender_nickname string
 
 		receiverClient := getClient(c, msg.To)
 		if receiverClient == nil {
@@ -115,7 +129,7 @@ func (c *Client) readmessages() {
 				for reciever := range c.manager.clients {
 					if reciever.Client_id == receiverClient.Client_id {
 						reciever.Connection.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf(
-							`{"status": "success", "from": "%s", "content": "%s"}`, sender_nickname, msg.Content)))
+							`{"status": "success", "from": "%s", "content": "%s"}`, c.Nickname, msg.Content)))
 						c.Connection.WriteMessage(websocket.TextMessage, []byte(`{"status": "successe", "message": "Your message is delevered"}`))
 					}
 				}

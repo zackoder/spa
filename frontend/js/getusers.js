@@ -6,6 +6,7 @@ export const getuser = async (sidebar) => {
   const usersContainer = createHTMLel("div", "usersContainer");
   let res = await fetch("/getusers");
   let nickNames = await res.json();
+  if (nickNames == null) return
   nickNames.forEach((nickName) => {
     const user = createUsrContainer(nickName);
     const userpopup = addeventToUser(user, nickName.nickname);
@@ -35,6 +36,7 @@ export function addeventToUser(user, nickname) {
     if (chatshone && chatshone !== div) {
       chatshone.classList.toggle("showen");
     }
+    document.querySelector(`#${nickname}`).querySelector('.sendmessage').focus();
     messagesOffset = 0;
     const body = div.children[1];
     div.classList.toggle("showen");

@@ -1,4 +1,4 @@
-import { creatcategories, createHTMLel, layout } from "./helpers.js";
+import { addPostPopUp, creatcategories, createHTMLel, layout } from "./helpers.js";
 export let user = "";
 
 export const root = document.getElementById("root");
@@ -93,9 +93,9 @@ export const searchBar = () => {
   });
 
   addposticon.addEventListener("click", () => {
-    const postcontainer = document.querySelector(".addPostContainer");
-    postcontainer.classList.toggle("show");
     layout.classList.toggle("layout");
+    addPostPopUp();
+    if (!root.querySelector(".layout")) root.appendChild(layout)
     if (layout.classList.contains("layout"))
       document.body.style.overflow = "hidden";
   });

@@ -75,9 +75,23 @@ export const signin = async () => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       let email = usernameInput.value.trim();
+      if (!email){
+        errUsername.textContent = "empty field";
+        errUsername.style.display = "block";
+        return;
+      }else{
+        errUsername.style.display = "none";
+      }
       let password = passwordInput.value.trim();
+      if (!password){
+        errPassword.textContent = "empty field";
+        errPassword.style.display = "block";
+        return;
+      }else{
+        errPassword.style.display = "none";
+      }
       const data = {
-        email: email,
+        username: email,
         password: password,
       };
 
@@ -88,6 +102,11 @@ export const signin = async () => {
           document.head.removeChild(docTitle);
           root.innerHTML = "";
           navigateTo("/");
+        } else {
+          console.log("err");
+          
+          errPassword.textContent = "Invalid credentiels";
+          errPassword.style.display = "block";
         }
       });
     });
@@ -268,31 +287,6 @@ export const signup = async () => {
       value: "/signin",
     });
     signin.appendChild(signinLink);
-    //   form.append(
-    //     h1,
-    //     nicknameLbl,
-    //     nicknameInpt,
-    //     firstNamelbl,
-    //     firstNameinpt,
-    //     lastNamelbl,
-    //     lastNameinpt,
-    //     agelbl,
-    //     ageinpt,
-    //     malelbl,
-    //     maleipt,
-    //     femalelbl,
-    //     femaleipt,
-    //     Emaillbl,
-    //     Emailinpt,
-    //     passwordlbl,
-    //     passwordinpt,
-    //     cpasswordlbl,
-    //     cpasswordinpt,
-    //     signin,
-    //     submitbtn
-    //   );
-    //   formcontainer.appendChild(form);
-    //   root.appendChild(formcontainer);
   }
 };
 

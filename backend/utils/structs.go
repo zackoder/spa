@@ -10,6 +10,17 @@ type SignupRequest struct {
 	Password  string `json:"password"`
 }
 
+type Users struct {
+	Nickname         string `json:"nickname"`
+	Firstname        string `json:"firstname"`
+	Lastname         string `json:"lastname"`
+	Gender           string `json:"gender"`
+	Age              string `json:"age"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	Confirm_Password string `json:"confirmPassword"`
+}
+
 type Posts struct {
 	Id         int       `json:"id"`
 	Title      string    `json:"title"`
@@ -48,7 +59,17 @@ type Comment struct {
 	Username     string `json:"username"`
 }
 
-type SigninRequest struct {
-	Userinpt string `json:"email"`
+// type SigninRequest struct {
+// 	Userinpt string `json:"email"`
+// 	Password string `json:"password"`
+// }
+
+type LoginUsers struct {
+	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type ErrorResponse struct {
+	Err  string
+	Code int
 }
