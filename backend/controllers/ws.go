@@ -78,6 +78,7 @@ func (m *Manager) removeClient(client *Client) {
 	defer m.Unlock()
 	for c := range m.clients {
 		if c.Client_id == client.Client_id {
+			c.Connection.Close()
 			delete(m.clients, c)
 		}
 	}
@@ -85,6 +86,7 @@ func (m *Manager) removeClient(client *Client) {
 		client.Connection.Close()
 		for c := range m.clients {
 			if c.Client_id != client.Client_id {
+				delete(m.clients, client)
 				c.Connection.WriteJSON(map[string]string{"user": "offline", "nickname": client.Nickname})
 			}
 		}
