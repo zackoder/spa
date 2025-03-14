@@ -52,7 +52,7 @@ export const fetchData = async (path, data) => {
   let resp = await fetch(path, {
     method: "POST",
     headers: {
-      "Content-type": "application/json",
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(data),
   });
@@ -85,7 +85,11 @@ export const sendPost = async (title, content, categories, errp) => {
   };
 
   const res = await fetchData("/addpost", data);
-
+  if (res.status === 401) {
+    root.innerHTML = ""
+    navigateTo("/signin")
+    return
+  }
   if (!res.ok) {
     console.log("while adding a post the res is not ok ", res);
     return;
@@ -486,6 +490,9 @@ async function handleReactionClick(
     } else if (data.action === "dislike") {
       likeBtn.classList.remove("liked");
       dislikeBtn.classList.toggle("disliked");
+    } else {
+      likeBtn.classList.remove("liked");
+      dislikeBtn.classList.remove("disliked");
     }
   } catch (error) {
     console.error("Error handling reaction:", error);

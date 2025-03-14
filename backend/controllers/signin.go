@@ -16,7 +16,7 @@ import (
 func Signin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		fmt.Println("method Err")
-		w.WriteHeader(401)
+		// w.WriteHeader(401)
 		utils.CreateJson(w, "Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -25,7 +25,7 @@ func Signin(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&userLogin)
 	if err != nil {
 		fmt.Println("decode json err", err)
-		w.WriteHeader(500)
+		// w.WriteHeader(500)
 		utils.CreateJson(w, "Internal Server Error tstErr", http.StatusInternalServerError)
 		return
 	}

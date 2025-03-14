@@ -19,6 +19,7 @@ func Addpost(w http.ResponseWriter, r *http.Request) {
 
 	cookie := utils.CheckCookie(r)
 	if cookie == nil {
+		
 		http.Redirect(w, r, "/signin", http.StatusUnauthorized)
 		return
 	}

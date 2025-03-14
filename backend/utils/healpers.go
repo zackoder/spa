@@ -22,9 +22,7 @@ func ParseAndExecute(w http.ResponseWriter) {
 	tmp, err := template.ParseFiles("../template/index.html")
 	if err != nil {
 		fmt.Println("error parse", err)
-		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"message": "Internal Server Error"})
 		return
 	}
 	tmp.Execute(w, nil)
@@ -32,7 +30,7 @@ func ParseAndExecute(w http.ResponseWriter) {
 
 func CreateJson(w http.ResponseWriter, strErr string, codErr int) {
 	err := ErrorResponse{Err: strErr, Code: codErr}
-	w.Header().Set("content-type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(codErr)
 	json.NewEncoder(w).Encode(err)
 }

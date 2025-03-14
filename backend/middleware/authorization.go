@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
 	"reat-time-forum/utils"
@@ -14,9 +15,20 @@ type Limit struct {
 
 type RateLimit struct {
 	User map[string]Limit
+	Mu   sync.Mutex
 }
 
+func NewRateLimit() *RateLimit {
+	return &RateLimit{
+		User: make(map[string]Limit),
+	}
+}
+
+var rateLimit = NewRateLimit()
+
 func (r *RateLimit) Allow(ip string) bool {
+	r.Mu.Lock()
+	defer r.Mu.Unlock()
 	if _, ok := r.User[ip]; !ok {
 		currentTime := time.Now()
 		r.User[ip] = Limit{LastTime: currentTime.Unix(), Counter: 1}
@@ -35,8 +47,6 @@ func (r *RateLimit) Allow(ip string) bool {
 	}
 	return true
 }
-
-var rateLimit RateLimit
 
 func Authorization(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

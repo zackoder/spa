@@ -75,19 +75,19 @@ export const signin = async () => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       let email = usernameInput.value.trim();
-      if (!email){
+      if (!email) {
         errUsername.textContent = "empty field";
         errUsername.style.display = "block";
         return;
-      }else{
+      } else {
         errUsername.style.display = "none";
       }
       let password = passwordInput.value.trim();
-      if (!password){
+      if (!password) {
         errPassword.textContent = "empty field";
         errPassword.style.display = "block";
         return;
-      }else{
+      } else {
         errPassword.style.display = "none";
       }
       const data = {
@@ -104,7 +104,7 @@ export const signin = async () => {
           navigateTo("/");
         } else {
           console.log("err");
-          
+
           errPassword.textContent = "Invalid credentiels";
           errPassword.style.display = "block";
         }
@@ -241,13 +241,12 @@ export const signup = async () => {
     root.appendChild(container);
 
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const firstNameinpt = document.querySelector('.Firstname')
       const lastNameinpt = document.querySelector('.Lastname')
       const password = document.querySelector('#password')
-      console.log(password);
 
       const confirmpassword = document.querySelector('#confirmpassword')
       const data = {
@@ -271,15 +270,21 @@ export const signup = async () => {
       if (!Validation.validatePassword(data.password)) { return; }
       if (!Validation.validateConfirmPassword(data.confirmPassword)) { return; }
 
-      let res = fetchData("/sign-up", data);
-      res.then((resp) => {
-        if (resp.ok) {
-          document.head.removeChild(title);
-          document.head.removeChild(styleLink);
-          root.innerHTML = "";
-          navigateTo("/signin");
-        }
-      });
+      let res = await fetchData("/sign-up", data);
+      if (res.ok) {
+        document.head.removeChild(title);
+        document.head.removeChild(styleLink);
+        root.innerHTML = "";
+        navigateTo("/signin");
+      }
+      let response = await res.json()
+      if (!res.ok) {
+        console.log(response);
+        const err = document.getElementById('errpassword');
+        err.style.display = "block";
+        console.log(err);
+        err.textContent = response.Err;
+      }
     });
     const signin = createHTMLel("p", "signuplikn", "click the link to ");
     const signinLink = createHTMLel("a", "link", "Sign In", {

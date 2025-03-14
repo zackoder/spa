@@ -16,20 +16,19 @@ export const socketEvents = () => {
     console.log("the client is connected to the server");
   };
 
-  socket.onclose = () =>{
+  socket.onclose = () => {
     socket = null;
   }
 
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
     console.log("message data: ", data);
+    console.log(data);
 
     if (data.user) {
       handleconnection(data);
       return;
     }
-    console.log(data);
-    
 
     const senderchatbox = document.querySelector("#" + data.from);
 
@@ -56,6 +55,7 @@ export const socketEvents = () => {
       newMessage.classList.add("get");
 
       senderchatbox.children[1].prepend(newMessage);
+
       scrolldown(parent, newMessage);
     }
   };
@@ -96,6 +96,6 @@ function changeUserstat(users, stat, nickname) {
   users.forEach((user) => {
     if (user.children[0].textContent === nickname)
       user.children[1].textContent = stat;
-      return;
+    return;
   });
 }

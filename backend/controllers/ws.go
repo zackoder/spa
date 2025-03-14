@@ -16,6 +16,9 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 // Struct WS
@@ -27,11 +30,10 @@ type Manager struct {
 type ClientList map[*Client]bool
 
 type Client struct {
-	Connection       *websocket.Conn
-	NbrOfConnections int
-	manager          *Manager
-	Client_id        int
-	Nickname         string
+	Connection *websocket.Conn
+	manager    *Manager
+	Client_id  int
+	Nickname   string
 }
 
 func NewManager() *Manager {
@@ -67,7 +69,6 @@ func (m *Manager) addClient(client *Client) {
 		if c != client {
 			c.Connection.WriteJSON(map[string]string{"user": "online", "nickname": client.Nickname})
 			client.Connection.WriteJSON(map[string]string{"user": "online", "nickname": c.Nickname})
-			continue
 		}
 	}
 }
@@ -75,21 +76,23 @@ func (m *Manager) addClient(client *Client) {
 func (m *Manager) removeClient(client *Client) {
 	m.Lock()
 	defer m.Unlock()
-
+	for c := range m.clients {
+		if c.Client_id == client.Client_id {
+			delete(m.clients, c)
+		}
+	}
 	if _, ok := m.clients[client]; ok {
 		client.Connection.Close()
-		delete(m.clients, client)
-		if client.NbrOfConnections == 1 {
-			for c := range m.clients {
-				if c.Client_id != client.Client_id {
-					c.Connection.WriteJSON(map[string]string{"user": "offline", "nickname": client.Nickname})
-				}
+		for c := range m.clients {
+			if c.Client_id != client.Client_id {
+				c.Connection.WriteJSON(map[string]string{"user": "offline", "nickname": client.Nickname})
 			}
 		}
 	}
 }
 
-var rateLimit middleware.RateLimit
+// var rateLimit middleware.RateLimit
+var rateLimit = middleware.NewRateLimit()
 
 func (c *Client) readmessages() {
 	defer func() {
@@ -109,7 +112,6 @@ func (c *Client) readmessages() {
 			break
 		}
 		var msg utils.Message
-
 		if err := json.Unmarshal(payload, &msg); err != nil {
 			fmt.Println(err)
 		}

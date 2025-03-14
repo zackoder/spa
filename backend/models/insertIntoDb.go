@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"reat-time-forum/utils"
 )
@@ -55,14 +54,19 @@ func InsertOrUpdateReaction(id int, target string, userId int, action string) (u
 	countQuery := `
 		SELECT
 			(SELECT COUNT(*) FROM reactions WHERE ` + target + ` = ? AND reaction_type = 'like') AS likes,
-			(SELECT COUNT(*) FROM reactions WHERE ` + target + ` = ? AND reaction_type = 'dislike') AS dislikes
+			(SELECT COUNT(*) FROM reactions WHERE ` + target + ` = ? AND reaction_type = 'dislike') AS dislikes,
+			COALESCE((
+				SELECT reaction_type
+				FROM reactions
+				WHERE user_id = ? AND post_id = ?
+				), '') AS user_reaction
 	`
-	err = db.QueryRow(countQuery, id, id).Scan(&reaction.Likes, &reaction.Dislikes)
+	err = db.QueryRow(countQuery, id, id, userId, id).Scan(&reaction.Likes, &reaction.Dislikes, &reaction.Action)
 	if err != nil {
 		fmt.Println("selecting likes err", err)
 		return reaction, err
 	}
-	reaction.Action = action
+	// reaction.Action = action
 	return reaction, nil
 }
 
@@ -170,12 +174,7 @@ func Insert(w http.ResponseWriter, nickname string, firstname string, lastname s
 
 	res, err := stmt.Exec(nickname, firstname, lastname, gender, age, email, password)
 	if err != nil {
-		utils.CreateJson(w, "there is an error try another time", http.StatusInternalServerError)
-		return -1
-	}
-
-	if err != nil && strings.Contains(err.Error(), "email") {
-		utils.CreateJson(w, "email already used try another email", http.StatusFound)
+		utils.CreateJson(w, "email or nickname already exists", http.StatusFound)
 		return -1
 	}
 	lastId, _ := res.LastInsertId()
