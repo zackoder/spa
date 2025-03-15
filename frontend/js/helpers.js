@@ -285,10 +285,7 @@ const showPosts = async (path) => {
 
 const creatPosts = (container, data, position) => {
   data.forEach((postData) => {
-    const postcontainer = createHTMLel("div", "postContainer", "", {
-      key: "post-id",
-      value: postData.id,
-    });
+    const postcontainer = createHTMLel("div", "postContainer", "");
     const postHeader = createHTMLel("a", "link poster", postData.poster, {
       key: "href",
       value: `/${postData.poster}`,

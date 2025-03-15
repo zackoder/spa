@@ -44,7 +44,7 @@ export function addeventToUser(user, nickname) {
     if (body.children.length === 0) {
       if (data) {
         data.forEach((msg) => {
-          creatmessage(msg, div.querySelector(".body"), nickname, "append");
+          creatmessage(msg, div.querySelector(".body"), nickname);
         });
       }
     }
@@ -71,7 +71,7 @@ async function getmessages(nickname) {
   }
 }
 
-export function creatmessage(msg, parent, nickName, possition) {
+export function creatmessage(msg, parent, nickName) {
   const div = createmsgcontaine(msg);
 
   if (msg.to === user) {
@@ -135,10 +135,10 @@ async function handelmessagesscroll(nickname) {
     element.scrollHeight - elrect.height
   ) {
     const data = await getmessages(nickname);
-    console.log("scroll: ",element.scrollTop);
+    console.log("scroll: ", element.scrollTop);
     if (!data) return;
     data.forEach((msg) => {
-      creatmessage(msg, element, nickname, "prepend");      
+      creatmessage(msg, element, nickname);
     });
     requestAnimationFrame(() => {
       element.scrollTop += element.scrollHeight - scorllHeightBefore;
@@ -217,9 +217,10 @@ async function sendMessage(receiver, content) {
           document.querySelectorAll(`.user`).forEach((user) => {
             if (user.children[0].textContent === data.from) {
               const notificationEl = createHTMLel("span", "notification");
-              console.log("hello");
-
-              user.append(notificationEl);
+              const alreadyNotified = user.querySelector(".notification")
+              console.log(alreadyNotified);
+              
+              if (!alreadyNotified) user.append(notificationEl);
             }
           });
         }

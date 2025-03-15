@@ -22,9 +22,6 @@ export const socketEvents = () => {
 
   socket.onmessage = (e) => {
     const data = JSON.parse(e.data);
-    console.log("message data: ", data);
-    console.log(data);
-
     if (data.user) {
       handleconnection(data);
       return;
@@ -45,8 +42,11 @@ export const socketEvents = () => {
       document.querySelectorAll(`.user`).forEach((user) => {
         if (user.children[0].textContent === data.from) {
           const notificationEl = createHTMLel("span", "notification");
+          const alreadyNotified = user.querySelector(".notification")
+          console.log(alreadyNotified);
+          
+          if (!alreadyNotified) user.append(notificationEl);
           users.prepend(user);
-          user.append(notificationEl);
         }
       });
     } else {
@@ -75,7 +75,6 @@ export function upgradeconnection() {
 }
 
 function handleconnection(data) {
-  console.log("data", data);
 
   let users = document.querySelectorAll(".user");
   if (data.user === "online") {
